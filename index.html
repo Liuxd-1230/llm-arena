@@ -997,7 +997,10 @@ function drawRadar(models,colors){
       const val=(m.dimAvg[d.id]||0)/max;
       return`${cx+r*Math.min(val,1)*Math.cos(angles[i])},${cy+r*Math.min(val,1)*Math.sin(angles[i])}`;
     }).join(' ');
-    const fillColor=models.length>=2?`${colors[mi%colors.length]}30`:`${colors[mi%colors.length]}15`;
+    // Count how many dimensions this model has scores for
+    const scoredDims=Object.keys(m.dimAvg).length;
+    // Only fill polygon if model has 2+ dimensions scored (forms a 2D area)
+    const fillColor=scoredDims>=2?`${colors[mi%colors.length]}30`:'none';
     html+=`<polygon points="${pts}" fill="${fillColor}" stroke="${colors[mi%colors.length]}" stroke-width="2" opacity="0.9"/>`;
     // Dots
     DIMS.forEach((d,i)=>{
