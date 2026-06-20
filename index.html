@@ -256,6 +256,8 @@ body{font-family:var(--sans);background:var(--s0);color:var(--t1);line-height:1.
 
 <div class="toast" id="toast"><i class="ri-check-line" style="color:var(--gn);"></i><span id="toastMsg"></span></div>
 
+<script src="data/autoscore.js"></script>
+<script src="data/longcontext.js"></script>
 <script>
 const DIMS=[
   {id:"code_frontend",name:"前端代码美感",icon:"ri-palette-line",color:"#3b82f6",desc:"HTML/CSS视觉设计、交互体验、创意表现",isCode:true},
@@ -528,7 +530,27 @@ function closeFuncModal(){document.getElementById('funcModal').classList.remove(
 function startBlind(){
   const queue=S.entries.filter(e=>e.score===null||e.score===undefined);
   if(queue.length===0){toast('没有待测项目','ri-error-warning-line');return;}
-  S.blindQueue=shuffle([...queue]);
+
+  // Auto-score objective questions
+  let autoCount=0;
+  queue.forEach(item=>{
+    if(typeof hasAutoScore==='function' && hasAutoScore(item.qName)){
+      const result=autoScore(item.answer, item.qName);
+      if(result){
+        const entry=S.entries.find(e=>e.id===item.id);
+        if(entry){entry.score=result.total_score;entry.note='自动评分';entry.autoScore=result;save();}
+        autoCount++;
+      }
+    }
+  });
+
+  if(autoCount>0) toast(`已自动评分 ${autoCount} 道客观题`);
+
+  // Re-filter: only manual items remain
+  const manualQueue=S.entries.filter(e=>e.score===null||e.score===undefined);
+  if(manualQueue.length===0){toast('所有题目已自动评分完成！');showCompare();return;}
+
+  S.blindQueue=shuffle([...manualQueue]);
   S.blindIdx=0;
   showBlindItem();
   document.getElementById('blindOverlay').classList.add('show');
@@ -559,17 +581,37 @@ function showBlindItem(){
     document.getElementById('blindCodeArea').classList.remove('show');
     document.getElementById('blindCodePre').textContent='';
   } else {
-    // For non-code: show answer as rendered text page
+    // For non-code: check if long-context question and show document first
+    const longDocId = getLongDocForQuestion(item.qName);
     frame.style.display='block';
     const doc=frame.contentDocument||frame.contentWindow.document;
     doc.open();
-    doc.write(`<!DOCTYPE html><html><head><style>
-      body{font-family:-apple-system,system-ui,sans-serif;max-width:800px;margin:40px auto;padding:0 24px;color:#1a1a1a;line-height:1.8;font-size:15px;}
-      pre{background:#f4f4f5;padding:16px;border-radius:8px;overflow:auto;font-size:13px;line-height:1.6;}
-      code{background:#f4f4f5;padding:2px 6px;border-radius:4px;font-size:13px;}
-      h1,h2,h3{margin-top:1.5em;margin-bottom:0.5em;}
-      p{margin-bottom:1em;}
-    </style></head><body><pre style="white-space:pre-wrap;background:transparent;padding:0;">${escHtml(item.answer)}</pre></body></html>`);
+    if(longDocId && typeof LONG_DOCS!=='undefined' && LONG_DOCS[longDocId]){
+      const ldoc=LONG_DOCS[longDocId];
+      doc.write(`<!DOCTYPE html><html><head><style>
+        body{font-family:-apple-system,system-ui,sans-serif;max-width:800px;margin:0 auto;padding:24px;color:#1a1a1a;line-height:1.8;font-size:15px;}
+        .doc-section{background:#f8f9fa;border-left:3px solid #3b82f6;padding:20px;margin-bottom:24px;border-radius:0 8px 8px 0;}
+        .doc-title{font-size:12px;font-weight:600;color:#3b82f6;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:12px;}
+        .doc-content{white-space:pre-wrap;font-size:13px;line-height:1.7;color:#374151;max-height:40vh;overflow:auto;}
+        .answer-section{border-top:2px solid #e5e7eb;padding-top:20px;margin-top:20px;}
+        .answer-label{font-size:12px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:12px;}
+        pre{white-space:pre-wrap;font-size:14px;line-height:1.7;color:#111;}
+      </style></head><body>
+        <div class="doc-section">
+          <div class="doc-title">📄 参考文档：${escHtml(ldoc.title)} (${ldoc.word_count}字)</div>
+          <div class="doc-content">${escHtml(ldoc.content)}</div>
+        </div>
+        <div class="answer-section">
+          <div class="answer-label">模型回答</div>
+          <pre>${escHtml(item.answer)}</pre>
+        </div>
+      </body></html>`);
+    } else {
+      doc.write(`<!DOCTYPE html><html><head><style>
+        body{font-family:-apple-system,system-ui,sans-serif;max-width:800px;margin:40px auto;padding:0 24px;color:#1a1a1a;line-height:1.8;font-size:15px;}
+        pre{white-space:pre-wrap;background:transparent;padding:0;font-size:14px;line-height:1.7;}
+      </style></head><body><pre>${escHtml(item.answer)}</pre></body></html>`);
+    }
     doc.close();
     document.getElementById('btnToggleCode').style.display='none';
     document.getElementById('blindCodeArea').classList.remove('show');
@@ -605,6 +647,10 @@ function exitBlind(){document.getElementById('blindOverlay').classList.remove('s
 
 function shuffle(arr){for(let i=arr.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[arr[i],arr[j]]=[arr[j],arr[i]];}return arr;}
 function escHtml(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function getLongDocForQuestion(qName){
+  const map={"信息提取":"doc_python","长文总结":"doc_microservices","矛盾检测":"doc_ceo_jan","跨文档推理":"doc_investment"};
+  return map[qName]||null;
+}
 
 // ===== ENTRIES LIST =====
 function renderEntries(el){
