@@ -480,14 +480,26 @@ function renderCollectPanel(){
         if(!hasAuto&&!hasLLM&&e.score!==null&&e.score!==undefined) scoreDisplay.push(`<span>${e.score}分</span>`);
         if(e.score===null||e.score===undefined) scoreDisplay.push(`<span style="color:var(--t4);">待评分</span>`);
         return`
-        <div class="entry-item" style="flex-wrap:wrap;gap:8px;">
-          <span class="entry-blind-id">${e.blindId}</span>
-          <span style="font-size:13px;font-weight:500;">${e.model}</span>
-          <span style="font-size:12px;color:var(--t3);">${e.qName}</span>
-          <span style="margin-left:auto;font-size:12px;">${scoreDisplay.join(' ')}</span>
-          <button class="btn btn-ghost btn-xs" onclick="copyForLLMJudge(${e.id})" title="复制Prompt给强模型"><i class="ri-robot-line"></i></button>
-          <button class="btn btn-ghost btn-xs" onclick="openImportModal(${e.id})" title="导入强模型评分"><i class="ri-braces-line"></i></button>
-          <button class="btn btn-ghost btn-xs" onclick="deleteEntry(${e.id})" title="删除"><i class="ri-delete-bin-line"></i></button>
+        <div style="background:var(--s2);border:1px solid var(--bdr);border-radius:var(--r8);margin-bottom:6px;">
+          <div class="entry-item" style="flex-wrap:wrap;gap:8px;border:none;background:transparent;" onclick="toggleEntryDetail(${e.id})" style="cursor:pointer;">
+            <span class="entry-blind-id">${e.blindId}</span>
+            <span style="font-size:13px;font-weight:500;">${e.model}</span>
+            <span style="font-size:12px;color:var(--t3);">${e.qName}</span>
+            <span style="margin-left:auto;font-size:12px;">${scoreDisplay.join(' ')}</span>
+            <button class="btn btn-ghost btn-xs" onclick="event.stopPropagation();copyForLLMJudge(${e.id})" title="复制Prompt给强模型"><i class="ri-robot-line"></i></button>
+            <button class="btn btn-ghost btn-xs" onclick="event.stopPropagation();openImportModal(${e.id})" title="导入强模型评分"><i class="ri-braces-line"></i></button>
+            <button class="btn btn-ghost btn-xs" onclick="event.stopPropagation();deleteEntry(${e.id})" title="删除"><i class="ri-delete-bin-line"></i></button>
+          </div>
+          <div id="detail-${e.id}" style="display:none;padding:0 16px 12px;">
+            ${e.llmDetail?`
+              <div style="font-size:11px;font-weight:600;color:var(--ac);margin-bottom:8px;">🤖 强模型评语</div>
+              ${e.llmDetail.highlights?`<div style="font-size:12px;margin-bottom:6px;"><span style="color:var(--gn);">亮点：</span>${Array.isArray(e.llmDetail.highlights)?e.llmDetail.highlights.join('；'):e.llmDetail.highlights}</div>`:''}
+              ${e.llmDetail.improvements?`<div style="font-size:12px;margin-bottom:6px;"><span style="color:var(--am);">改进：</span>${Array.isArray(e.llmDetail.improvements)?e.llmDetail.improvements.join('；'):e.llmDetail.improvements}</div>`:''}
+              ${e.llmDetail.overall_comment?`<div style="font-size:12px;color:var(--t2);line-height:1.6;">${e.llmDetail.overall_comment}</div>`:''}
+              ${e.llmDetail.accuracy?`<div style="font-size:11px;color:var(--t3);margin-top:6px;">准确性:${e.llmDetail.accuracy.score}/${e.llmDetail.accuracy.max} 完整性:${e.llmDetail.completeness?.score||'-'}/${e.llmDetail.completeness?.max||'-'} 表达:${e.llmDetail.expression?.score||'-'}/${e.llmDetail.expression?.max||'-'} 洞察:${e.llmDetail.insight?.score||'-'}/${e.llmDetail.insight?.max||'-'}</div>`:''}
+            `:`<div style="font-size:12px;color:var(--t4);">暂无强模型评语</div>`}
+            ${e.autoDetail?`<div style="font-size:11px;font-weight:600;color:var(--gn);margin-top:8px;">⚡ 自动评分详情</div><div style="font-size:11px;color:var(--t3);">${JSON.stringify(e.autoDetail.breakdown||{})}</div>`:''}
+          </div>
         </div>`;}).join('')}</div>`:''}
       ${S.entries.filter(e=>e.score===null||e.score===undefined).length>0&&!dim.autoScore?`<div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--bdr);"><button class="btn btn-primary" onclick="startBlind()" style="width:100%;justify-content:center;"><i class="ri-play-line"></i> 全屏盲测 (${S.entries.filter(e=>e.score===null||e.score===undefined).length}个待测)</button></div>`:''}
     </div>
@@ -518,6 +530,7 @@ function addEntry(){
 }
 
 function deleteEntry(id){S.entries=S.entries.filter(e=>e.id!==id);save();renderSidebar();render();}
+function toggleEntryDetail(id){const el=document.getElementById('detail-'+id);if(el)el.style.display=el.style.display==='none'?'block':'none';}
 
 // ===== Func Check =====
 function runFuncCheck(){
@@ -633,15 +646,38 @@ function resetModel(name){
 }
 
 // ===== Radar Chart Comparison =====
+// Radar model visibility state
+let radarVisible = {};
 function renderRadar(el){
   const models=getModelStats();const sorted=Object.values(models).sort((a,b)=>b.avgScore-a.avgScore);
   const colors=['#3b82f6','#22c55e','#a855f7','#f59e0b','#ec4899','#06b6d4','#ef4444','#6366f1'];
+  // Init visibility (all visible by default)
+  sorted.forEach(m=>{if(radarVisible[m.name]===undefined)radarVisible[m.name]=true;});
   el.innerHTML=`<div class="sec-head"><div class="sec-title"><i class="ri-pie-chart-2-line" style="margin-right:8px;"></i>10维雷达图对比</div></div>
     ${sorted.length<1?'<div style="text-align:center;padding:60px 0;color:var(--t4);">至少需要1个已评分的模型</div>':`
-    <div style="display:flex;justify-content:center;margin-bottom:24px;"><svg id="radarSvg" viewBox="0 0 500 480" style="max-width:500px;"></svg></div>
-    <div style="display:flex;flex-wrap:wrap;gap:12px;justify-content:center;">${sorted.map((m,i)=>`<span style="display:flex;align-items:center;gap:6px;font-size:13px;"><span style="width:12px;height:12px;border-radius:50%;background:${colors[i%colors.length]};display:inline-block;"></span>${m.name} (${m.avgScore})</span>`).join('')}</div>`}`;
-  if(sorted.length>=1)drawRadar(sorted,colors);
+    <div style="display:flex;gap:24px;align-items:flex-start;flex-wrap:wrap;">
+      <div style="flex:1;min-width:400px;display:flex;justify-content:center;"><svg id="radarSvg" viewBox="0 0 500 480" style="max-width:500px;"></svg></div>
+      <div style="min-width:200px;">
+        <div class="label" style="margin-bottom:8px;">模型选择</div>
+        <div style="display:flex;flex-direction:column;gap:6px;">
+          ${sorted.map((m,i)=>`<label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;padding:6px 10px;border-radius:var(--r6);background:${radarVisible[m.name]?colors[i%colors.length]+'15':'transparent'};border:1px solid ${radarVisible[m.name]?colors[i%colors.length]+'40':'var(--bdr)'};">
+            <input type="checkbox" ${radarVisible[m.name]?'checked':''} onchange="toggleRadarModel('${m.name.replace(/'/g,"\\'")}',this.checked)" style="accent-color:${colors[i%colors.length]};">
+            <span style="width:10px;height:10px;border-radius:50%;background:${colors[i%colors.length]};flex-shrink:0;"></span>
+            <span style="flex:1;font-weight:${radarVisible[m.name]?'600':'400'};color:${radarVisible[m.name]?'var(--t1)':'var(--t4)'};">${m.name}</span>
+            <span style="font-family:var(--mono);font-size:12px;color:var(--t3);">${m.avgScore}</span>
+          </label>`).join('')}
+        </div>
+        <div style="margin-top:12px;display:flex;gap:6px;">
+          <button class="btn btn-ghost btn-xs" onclick="radarShowAll()">全选</button>
+          <button class="btn btn-ghost btn-xs" onclick="radarHideAll()">全不选</button>
+        </div>
+      </div>
+    </div>`}`;
+  drawRadar(sorted.filter(m=>radarVisible[m.name]),colors);
 }
+function toggleRadarModel(name,visible){radarVisible[name]=visible;renderRadar(document.getElementById('main'));}
+function radarShowAll(){Object.keys(radarVisible).forEach(k=>radarVisible[k]=true);renderRadar(document.getElementById('main'));}
+function radarHideAll(){Object.keys(radarVisible).forEach(k=>radarVisible[k]=false);renderRadar(document.getElementById('main'));}
 
 function drawRadar(models,colors){
   const svg=document.getElementById('radarSvg');if(!svg)return;
