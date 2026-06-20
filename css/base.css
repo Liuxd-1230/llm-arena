@@ -1,0 +1,11 @@
+/*
+ * base.css
+ * 全局重置和基础样式
+ * 用途：box-sizing 重置、html/body 基础设定、选中样式、滚动条样式
+ */
+
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth;-webkit-font-smoothing:antialiased}
+body{font-family:var(--sans);background:var(--s0);color:var(--t1);line-height:1.5;min-height:100dvh}
+::selection{background:var(--ac);color:#fff}
+::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--s4);border-radius:2px}

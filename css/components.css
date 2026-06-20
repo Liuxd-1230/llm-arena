@@ -1,0 +1,46 @@
+/*
+ * components.css
+ * 通用 UI 组件样式
+ * 用途：按钮、输入框、文本域、标签、卡片、标签页、Toast、模态框等可复用组件
+ */
+
+/* Buttons */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:var(--r8);font-size:13px;font-weight:500;font-family:var(--sans);cursor:pointer;transition:all 0.15s;border:1px solid transparent;white-space:nowrap}
+.btn:active{transform:scale(0.98)}
+.btn-ghost{background:transparent;color:var(--t2);border-color:transparent}.btn-ghost:hover{color:var(--t1);background:var(--s3)}
+.btn-outline{background:transparent;color:var(--t2);border-color:var(--bdr)}.btn-outline:hover{color:var(--t1);border-color:var(--bdr2);background:var(--s2)}
+.btn-primary{background:var(--ac);color:#fff;border-color:var(--ac)}.btn-primary:hover{background:#2563eb}
+.btn-danger{background:var(--rd);color:#fff;border-color:var(--rd)}.btn-danger:hover{background:#dc2626}
+.btn-sm{padding:5px 10px;font-size:12px}.btn-xs{padding:3px 8px;font-size:11px;border-radius:var(--r6)}
+.btn-icon{width:32px;height:32px;padding:0;display:flex;align-items:center;justify-content:center;border-radius:var(--r8);background:transparent;color:var(--t3);border:1px solid transparent;cursor:pointer;transition:all 0.15s}
+.btn-icon:hover{color:var(--t1);background:var(--s3)}
+
+/* Input */
+.input{width:100%;padding:8px 12px;background:var(--s2);border:1px solid var(--bdr);border-radius:var(--r8);color:var(--t1);font-size:13px;outline:none;font-family:var(--sans);transition:border-color 0.15s}
+.input:focus{border-color:var(--ac)}
+.textarea{width:100%;min-height:180px;padding:14px;background:var(--s0);border:1px solid var(--bdr);border-radius:var(--r8);color:var(--t1);font-family:var(--mono);font-size:13px;line-height:1.6;resize:vertical;outline:none}
+.textarea:focus{border-color:var(--ac)}
+.textarea::placeholder{color:var(--t4)}
+.label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;color:var(--t4);margin-bottom:6px}
+
+/* Card */
+.card{background:var(--s1);border:1px solid var(--bdr);border-radius:var(--r12);overflow:hidden}
+.card-header{padding:14px 20px;background:var(--s2);border-bottom:1px solid var(--bdr);display:flex;align-items:center;justify-content:space-between}
+.card-body{padding:20px}
+
+/* Tabs */
+.tab-row{display:flex;gap:2px;background:var(--s2);padding:3px;border-radius:var(--r8);margin-bottom:20px;border:1px solid var(--bdr)}
+.tab-btn{flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:8px 12px;background:transparent;border:none;border-radius:var(--r6);color:var(--t3);font-size:13px;font-weight:500;font-family:var(--sans);cursor:pointer;transition:all 0.15s}
+.tab-btn:hover{color:var(--t2)}.tab-btn.active{color:var(--t);background:var(--s3)}
+
+/* Toast */
+.toast{position:fixed;bottom:20px;right:20px;padding:10px 16px;background:var(--s3);border:1px solid var(--bdr);border-radius:var(--r8);font-size:13px;display:flex;align-items:center;gap:8px;transform:translateY(80px);opacity:0;transition:all 0.2s;z-index:200}
+.toast.show{transform:translateY(0);opacity:1}
+
+/* Modal */
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,0.6);backdrop-filter:blur(4px);display:none;align-items:center;justify-content:center;z-index:100}
+.modal-bg.show{display:flex}
+.modal-box{background:var(--s1);border:1px solid var(--bdr);border-radius:var(--r16);padding:28px;width:90%;max-width:600px;max-height:80vh;overflow-y:auto}
+.modal-box h3{font-size:16px;font-weight:700;margin-bottom:6px}
+.modal-box p{font-size:13px;color:var(--t3);margin-bottom:16px}
+.modal-foot{display:flex;justify-content:flex-end;gap:8px;margin-top:16px}
