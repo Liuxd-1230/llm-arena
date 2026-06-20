@@ -131,6 +131,40 @@ body{font-family:var(--sans);background:var(--s0);color:var(--t1);line-height:1.
 .blind-score-input{width:80px;padding:8px 12px;background:var(--s2);border:1px solid var(--bdr);border-radius:var(--r8);color:var(--t1);font-size:20px;font-weight:700;text-align:center;font-family:var(--mono);outline:none}
 .blind-score-input:focus{border-color:var(--ac)}
 .blind-score-max{font-size:14px;color:var(--t4)}
+
+/* Thumbnail Grid View */
+.thumb-overlay{position:fixed;inset:0;z-index:100;background:var(--s0);display:none;flex-direction:column}
+.thumb-overlay.show{display:flex}
+.thumb-topbar{display:flex;align-items:center;justify-content:space-between;padding:12px 24px;background:var(--s1);border-bottom:1px solid var(--bdr);flex-shrink:0}
+.thumb-grid{flex:1;overflow:auto;padding:24px;display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:20px;align-content:start}
+.thumb-card{background:var(--s1);border:1px solid var(--bdr);border-radius:var(--r12);overflow:hidden;cursor:pointer;transition:all 0.2s;position:relative}
+.thumb-card:hover{border-color:var(--ac);transform:translateY(-2px);box-shadow:0 8px 32px rgba(0,0,0,0.3)}
+.thumb-card-scored{opacity:0.5}
+.thumb-card-scored::after{content:attr(data-score);position:absolute;top:12px;right:12px;background:var(--gn);color:#fff;font-size:12px;font-weight:700;padding:4px 10px;border-radius:100px;z-index:2}
+.thumb-frame-wrap{width:100%;height:220px;overflow:hidden;position:relative;background:#000}
+.thumb-frame-wrap iframe{width:1600px;height:1200px;border:none;transform:scale(0.2);transform-origin:top left;pointer-events:none}
+.thumb-card-info{padding:12px 16px;display:flex;align-items:center;gap:10px}
+.thumb-card-id{font-family:var(--mono);font-size:12px;padding:2px 8px;border-radius:100px;background:var(--s3);color:var(--t3)}
+.thumb-card-dim{font-size:11px;color:var(--t4)}
+.thumb-card-q{font-size:13px;font-weight:500;flex:1}
+
+/* Fullscreen Preview with Floating Rubric */
+.preview-overlay{position:fixed;inset:0;z-index:110;background:var(--s0);display:none;flex-direction:column}
+.preview-overlay.show{display:flex}
+.preview-topbar{display:flex;align-items:center;gap:12px;padding:10px 20px;background:var(--s1);border-bottom:1px solid var(--bdr);flex-shrink:0}
+.preview-main{flex:1;position:relative;overflow:hidden}
+.preview-frame{width:100%;height:100%;border:none}
+.preview-rubric{position:absolute;top:16px;right:16px;width:300px;max-height:calc(100% - 32px);background:rgba(17,17,19,0.92);backdrop-filter:blur(16px);border:1px solid var(--bdr2);border-radius:var(--r12);overflow-y:auto;z-index:5;padding:16px;box-shadow:0 8px 32px rgba(0,0,0,0.4)}
+.preview-rubric h4{font-size:13px;font-weight:600;margin-bottom:12px;display:flex;align-items:center;gap:6px}
+.preview-rubric-item{margin-bottom:12px}
+.preview-rubric-label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;color:var(--t4);margin-bottom:4px}
+.preview-rubric-desc{font-size:12px;color:var(--t3);line-height:1.5}
+.preview-score-row{display:flex;align-items:center;gap:8px;margin-top:8px}
+.preview-score-input{width:64px;padding:6px 8px;background:var(--s2);border:1px solid var(--bdr);border-radius:var(--r6);color:var(--t1);font-size:18px;font-weight:700;text-align:center;font-family:var(--mono);outline:none}
+.preview-score-input:focus{border-color:var(--ac)}
+.preview-total{font-size:24px;font-weight:700;color:var(--ac);font-family:var(--mono)}
+.preview-actions{display:flex;gap:8px;margin-top:12px;padding-top:12px;border-top:1px solid var(--bdr)}
+.preview-note{width:100%;padding:6px 10px;background:var(--s2);border:1px solid var(--bdr);border-radius:var(--r6);color:var(--t1);font-size:12px;outline:none;margin-top:8px}
 .blind-note{flex:1;padding:8px 12px;background:var(--s2);border:1px solid var(--bdr);border-radius:var(--r8);color:var(--t1);font-size:13px;outline:none;font-family:var(--sans)}
 
 /* Toast */
@@ -236,6 +270,84 @@ body{font-family:var(--sans);background:var(--s0);color:var(--t1);line-height:1.
   </div>
 </div>
 
+<!-- Thumbnail Grid View (for frontend dimensions) -->
+<div class="thumb-overlay" id="thumbOverlay">
+  <div class="thumb-topbar">
+    <div style="display:flex;align-items:center;gap:12px;">
+      <button class="btn btn-ghost btn-sm" onclick="exitThumbView()"><i class="ri-close-line"></i> 退出</button>
+      <span style="font-size:15px;font-weight:700;" id="thumbTitle"></span>
+      <span style="font-size:12px;color:var(--t3);" id="thumbCount"></span>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;">
+      <button class="btn btn-ghost btn-sm" onclick="switchToBlindFromThumb()"><i class="ri-list-ordered"></i> 列表模式</button>
+      <button class="btn btn-primary btn-sm" onclick="exitThumbView();showView('compare');"><i class="ri-bar-chart-grouped-line"></i> 查看结果</button>
+    </div>
+  </div>
+  <div class="thumb-grid" id="thumbGrid"></div>
+</div>
+
+<!-- Fullscreen Preview with Floating Rubric -->
+<div class="preview-overlay" id="previewOverlay">
+  <div class="preview-topbar">
+    <button class="btn btn-ghost btn-sm" onclick="closePreview()"><i class="ri-arrow-left-line"></i> 返回缩略图</button>
+    <span style="font-size:14px;font-weight:600;" id="previewTitle"></span>
+    <span id="previewBlindId" style="font-family:var(--mono);font-size:12px;padding:2px 8px;border-radius:100px;background:var(--s3);color:var(--t3);"></span>
+    <div style="flex:1"></div>
+    <button class="btn btn-ghost btn-sm" id="previewToggleCode" onclick="togglePreviewCode()"><i class="ri-code-s-slash-line"></i> 代码</button>
+    <span style="font-size:12px;color:var(--t4);" id="previewProgress"></span>
+  </div>
+  <div class="preview-main">
+    <iframe class="preview-frame" id="previewFrame"></iframe>
+    <div class="preview-rubric" id="previewRubric">
+      <h4><i class="ri-list-check-3" style="color:var(--ac)"></i> 前端代码评分标准</h4>
+      <div class="preview-rubric-item">
+        <div class="preview-rubric-label">🎨 视觉设计 (30分)</div>
+        <div class="preview-rubric-desc">整体美感、配色协调、排版精致度、视觉层次感</div>
+        <div class="preview-score-row">
+          <input type="number" class="preview-score-input" id="scoreVisual" min="0" max="30" placeholder="0">
+          <span style="color:var(--t4);font-size:12px">/ 30</span>
+        </div>
+      </div>
+      <div class="preview-rubric-item">
+        <div class="preview-rubric-label">⚡ 交互体验 (25分)</div>
+        <div class="preview-rubric-desc">悬停效果、过渡动画、响应式适配、用户反馈</div>
+        <div class="preview-score-row">
+          <input type="number" class="preview-score-input" id="scoreInteract" min="0" max="25" placeholder="0">
+          <span style="color:var(--t4);font-size:12px">/ 25</span>
+        </div>
+      </div>
+      <div class="preview-rubric-item">
+        <div class="preview-rubric-label">🏗️ 代码质量 (25分)</div>
+        <div class="preview-rubric-desc">语义化HTML、CSS组织、命名规范、无冗余代码</div>
+        <div class="preview-score-row">
+          <input type="number" class="preview-score-input" id="scoreCode" min="0" max="25" placeholder="0">
+          <span style="color:var(--t4);font-size:12px">/ 25</span>
+        </div>
+      </div>
+      <div class="preview-rubric-item">
+        <div class="preview-rubric-label">💡 创意完成度 (20分)</div>
+        <div class="preview-rubric-desc">题目要求的完成度、创意发挥、设计独特性</div>
+        <div class="preview-score-row">
+          <input type="number" class="preview-score-input" id="scoreCreative" min="0" max="20" placeholder="0">
+          <span style="color:var(--t4);font-size:12px">/ 20</span>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;padding-top:12px;border-top:1px solid var(--bdr);margin-top:4px;">
+        <span style="font-size:12px;color:var(--t3);">总分</span>
+        <span class="preview-total" id="previewTotal">0</span>
+      </div>
+      <input type="text" class="preview-note" id="previewNote" placeholder="评分备注（可选）">
+      <div class="preview-actions">
+        <button class="btn btn-primary" style="flex:1;justify-content:center;" onclick="submitPreviewScore()"><i class="ri-check-line"></i> 提交</button>
+        <button class="btn btn-outline" onclick="previewNext()"><i class="ri-skip-forward-line"></i> 跳过</button>
+      </div>
+    </div>
+    <div id="previewCodeArea" style="display:none;position:absolute;inset:0;background:var(--s0);z-index:3;overflow:auto;padding:20px;">
+      <pre style="font-family:var(--mono);font-size:12px;line-height:1.6;color:var(--t2);white-space:pre-wrap;" id="previewCodePre"></pre>
+    </div>
+  </div>
+</div>
+
 <!-- Reveal Modal -->
 <div class="modal-bg" id="revealModal">
   <div class="modal-box">
@@ -318,6 +430,13 @@ const QS=[
   {dim:"code_frontend",diff:"gold",name:"暗黑仪表板布局",prompt:"纯HTML+CSS暗黑后台：侧边栏+顶栏+主内容区(统计卡+表格)，SVG图标。只输出代码。"},
   {dim:"code_frontend",diff:"diamond",name:"3D透视卡片",prompt:"纯HTML+CSS 3D卡片(3张)：perspective+transform倾斜、hover旋转、背面可见。只输出代码。"},
   {dim:"code_frontend",diff:"diamond",name:"赛博朋克404",prompt:"纯HTML+CSS赛博朋克404页：glitch文字、扫描线、霓虹发光、矩阵雨。只输出代码。"},
+  // 新增风格化题目 (taste-skill inspired)
+  {dim:"code_frontend",diff:"silver",name:"Bento Grid特性展示",prompt:"纯HTML+CSS Apple风格Bento Grid：4-6个不对称tile(大+小混排)，每个tile展示一个产品特性，带渐变背景和hover缩放。CSS Grid布局，移动端单列。只输出代码。"},
+  {dim:"code_frontend",diff:"silver",name:"Editorial博客布局",prompt:"纯HTML+CSS Editorial风格博客首页：大图Hero+不对称文章网格(特色文章宽+普通文章窄)，衬线标题+无衬线正文，大量留白。只输出代码。"},
+  {dim:"code_frontend",diff:"gold",name:"Premium Landing Page",prompt:"纯HTML+CSS高端SaaS Landing Page：Split Hero(左文右图)+信任logo行+3列特性(非等宽)+客户评价轮播+CTA。深色主题，Geist风格字体，精致动画。只输出代码。"},
+  {dim:"code_frontend",diff:"gold",name:"Glassmorphism音乐播放器",prompt:"纯HTML+CSS毛玻璃风格音乐播放器：专辑封面背景模糊、播放控制条、进度条、播放列表。backdrop-filter+内发光边框。只输出代码。"},
+  {dim:"code_frontend",diff:"diamond",name:"完整Portfolio作品集",prompt:"纯HTML+CSS设计师Portfolio完整页面：导航+Hero(大字标题+简介)+作品展示(瀑布流/错位网格)+关于我+联系方式。要求：不对称布局、滚动动画提示、精致排版(标题48px+正文16px)、深色主题、移动端适配。只输出代码。"},
+  {dim:"code_frontend",diff:"diamond",name:"Brutalist创意主页",prompt:"纯HTML+CSS Brutalist风格创意机构主页：粗边框、等宽字体、raw grid、超大标题(80px+)、不规则布局、高对比色(黑黄/黑红)、hover抖动效果。要求视觉冲击力强，完全不同于常规SaaS风格。只输出代码。"},
   // Algo (auto)
   {dim:"code_algo",diff:"bronze",name:"两数之和",prompt:"实现两数之和：给定整数数组nums和目标值target，返回和为target的两个下标。O(n)时间。Python。"},
   {dim:"code_algo",diff:"silver",name:"LRU缓存",prompt:"设计LRU缓存：get和put均O(1)。Python实现完整类。"},
@@ -527,7 +646,14 @@ function renderCollectPanel(){
             ${e.autoDetail?`<div style="font-size:11px;font-weight:600;color:var(--gn);margin-top:8px;">⚡ 自动评分详情</div><div style="font-size:11px;color:var(--t3);">${JSON.stringify(e.autoDetail.breakdown||{})}</div>`:''}
           </div>
         </div>`;}).join('')}</div>`:''}
-      ${S.entries.filter(e=>(e.score===null||e.score===undefined)&&(e.dimId===dim.id)).length>0?`<div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--bdr);"><button class="btn btn-primary" onclick="startBlind('${dim.id}')" style="width:100%;justify-content:center;"><i class="ri-play-line"></i> 全屏盲测 (${S.entries.filter(e=>(e.score===null||e.score===undefined)&&(e.dimId===dim.id)).length}个待测)</button></div>`:''}
+      ${S.entries.filter(e=>(e.score===null||e.score===undefined)&&(e.dimId===dim.id)).length>0?`<div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--bdr);">
+        ${dim.id==='code_frontend'?`
+        <div style="display:flex;gap:8px;">
+          <button class="btn btn-primary" onclick="startThumbView('${dim.id}')" style="flex:1;justify-content:center;"><i class="ri-image-line"></i> 🖼️ 缩略图盲测 (${S.entries.filter(e=>(e.score===null||e.score===undefined)&&(e.dimId===dim.id)).length}个待测)</button>
+          <button class="btn btn-outline" onclick="startBlind('${dim.id}')"><i class="ri-list-ordered"></i> 列表模式</button>
+        </div>`:`
+        <button class="btn btn-primary" onclick="startBlind('${dim.id}')" style="width:100%;justify-content:center;"><i class="ri-play-line"></i> 全屏盲测 (${S.entries.filter(e=>(e.score===null||e.score===undefined)&&(e.dimId===dim.id)).length}个待测)</button>`}
+      </div>`:''}
     </div>
   </div>`;
 }
@@ -641,6 +767,128 @@ function toggleCode(){const a=document.getElementById('blindCodeArea');if(a.clas
 function submitBlindScore(){const score=parseInt(document.getElementById('blindScoreInput').value);const note=document.getElementById('blindNoteInput').value.trim();if(isNaN(score)){toast('请输入分数','ri-error-warning-line');return;}const item=S.blindQueue[S.blindIdx];const entry=S.entries.find(e=>e.id===item.id);if(entry){entry.score=score;entry.note=note;save();}S.blindIdx++;showBlindItem();}
 function skipBlind(){S.blindIdx++;showBlindItem();}
 function exitBlind(){document.getElementById('blindOverlay').classList.remove('show');renderSidebar();render();}
+
+// ===== Thumbnail Grid View (for frontend dimensions) =====
+let thumbQueue=[];
+let thumbIdx=0;
+function startThumbView(dimFilter){
+  const queue=S.entries.filter(e=>(e.score===null||e.score===undefined)&&(!dimFilter||e.dimId===dimFilter));
+  if(!queue.length){toast('没有待测题目','ri-error-warning-line');return;}
+  thumbQueue=shuffle([...queue]);
+  const dim=getDim(dimFilter||thumbQueue[0].dimId);
+  document.getElementById('thumbTitle').innerHTML=`<i class="${dim.icon}" style="color:${dim.color}"></i> ${dim.name} - 缩略图盲测`;
+  document.getElementById('thumbCount').textContent=`${thumbQueue.length}个待测`;
+  renderThumbGrid();
+  document.getElementById('thumbOverlay').classList.add('show');
+}
+function renderThumbGrid(){
+  const grid=document.getElementById('thumbGrid');
+  grid.innerHTML=thumbQueue.map((item,idx)=>{
+    const dim=getDim(item.dimId);
+    const dm=getDiff(item.qDiff);
+    const scored=item.score!==null&&item.score!==undefined;
+    return`<div class="thumb-card ${scored?'thumb-card-scored':''}" ${scored?`data-score="${item.score}分"`:''} onclick="openPreview(${idx})">
+      <div class="thumb-frame-wrap"><iframe srcdoc="${escHtml(item.answer)}" loading="lazy"></iframe></div>
+      <div class="thumb-card-info">
+        <span class="thumb-card-id">${item.blindId}</span>
+        <span class="thumb-card-q">${item.qName}</span>
+        <span class="thumb-card-dim">${dm.emoji} ${dm.name}</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+function exitThumbView(){
+  document.getElementById('thumbOverlay').classList.remove('show');
+  renderSidebar();render();
+}
+function switchToBlindFromThumb(){
+  exitThumbView();
+  const dimId=thumbQueue[0]?.dimId;
+  if(dimId)startBlind(dimId);
+}
+
+// ===== Fullscreen Preview with Floating Rubric =====
+let previewCodeVisible=false;
+function openPreview(idx){
+  thumbIdx=idx;
+  const item=thumbQueue[idx];
+  if(!item)return;
+  const dim=getDim(item.dimId);
+  const dm=getDiff(item.qDiff);
+  document.getElementById('previewTitle').innerHTML=`<i class="${dim.icon}" style="color:${dim.color}"></i> ${item.qName}`;
+  document.getElementById('previewBlindId').textContent=item.blindId;
+  document.getElementById('previewProgress').textContent=`${idx+1} / ${thumbQueue.length}`;
+  document.getElementById('previewFrame').srcdoc=item.answer;
+  document.getElementById('previewCodePre').textContent=item.answer;
+  document.getElementById('previewCodeArea').style.display='none';
+  previewCodeVisible=false;
+  // Reset scores
+  document.getElementById('scoreVisual').value='';
+  document.getElementById('scoreInteract').value='';
+  document.getElementById('scoreCode').value='';
+  document.getElementById('scoreCreative').value='';
+  document.getElementById('previewTotal').textContent='0';
+  document.getElementById('previewNote').value='';
+  // If already scored, fill in
+  if(item.score!==null&&item.score!==undefined){
+    document.getElementById('previewTotal').textContent=item.score;
+  }
+  document.getElementById('previewOverlay').classList.add('show');
+  // Auto-calculate on input
+  ['scoreVisual','scoreInteract','scoreCode','scoreCreative'].forEach(id=>{
+    document.getElementById(id).oninput=calcPreviewTotal;
+  });
+}
+function calcPreviewTotal(){
+  const v=parseInt(document.getElementById('scoreVisual').value)||0;
+  const i=parseInt(document.getElementById('scoreInteract').value)||0;
+  const c=parseInt(document.getElementById('scoreCode').value)||0;
+  const cr=parseInt(document.getElementById('scoreCreative').value)||0;
+  document.getElementById('previewTotal').textContent=Math.min(v+i+c+cr,100);
+}
+function togglePreviewCode(){
+  const area=document.getElementById('previewCodeArea');
+  previewCodeVisible=!previewCodeVisible;
+  area.style.display=previewCodeVisible?'block':'none';
+}
+function submitPreviewScore(){
+  const total=parseInt(document.getElementById('previewTotal').textContent)||0;
+  if(total===0){toast('请先评分','ri-error-warning-line');return;}
+  const note=document.getElementById('previewNote').value.trim();
+  const item=thumbQueue[thumbIdx];
+  const entry=S.entries.find(e=>e.id===item.id);
+  if(entry){
+    entry.score=total;
+    entry.note=note||`视觉${document.getElementById('scoreVisual').value||0} 交互${document.getElementById('scoreInteract').value||0} 代码${document.getElementById('scoreCode').value||0} 创意${document.getElementById('scoreCreative').value||0}`;
+    entry.autoDetail={
+      breakdown:{
+        visual:parseInt(document.getElementById('scoreVisual').value)||0,
+        interaction:parseInt(document.getElementById('scoreInteract').value)||0,
+        code_quality:parseInt(document.getElementById('scoreCode').value)||0,
+        creative:parseInt(document.getElementById('scoreCreative').value)||0
+      }
+    };
+    save();
+  }
+  // Update thumbnail
+  item.score=total;
+  renderThumbGrid();
+  toast(`已评分 ${item.blindId}: ${total}分`);
+  // Go to next
+  previewNext();
+}
+function previewNext(){
+  if(thumbIdx<thumbQueue.length-1){
+    openPreview(thumbIdx+1);
+  }else{
+    closePreview();
+    toast('所有题目已评分！');
+  }
+}
+function closePreview(){
+  document.getElementById('previewOverlay').classList.remove('show');
+  renderThumbGrid();
+}
 
 // ===== Model Aggregation =====
 function getModelStats(){
