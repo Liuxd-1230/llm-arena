@@ -1,6 +1,11 @@
 // Auto-scoring module for objective LLM evaluation questions
 // Provides reference answers and scoring functions for: code_algo, reasoning, knowledge, instruction, long_context
 
+// Normalize answer text for matching: remove markdown, LaTeX, extra spaces
+function normAnswer(answer) {
+  return (answer || '').replace(/\s+/g, '').replace(/[*$_{}\\()]/g, '').replace(/`/g, '').toLowerCase();
+}
+
 const REF_ANSWERS = {
   // === Algorithm & Programming ===
   "两数之和": {
@@ -11,6 +16,7 @@ const REF_ANSWERS = {
     rubric: (answer) => {
       let score = 0;
       const a = answer.toLowerCase();
+      const n = normAnswer(answer);
       if (a.includes('hash') || a.includes('dict') || a.includes('哈希')) score += 20;
       if (a.includes('o(n)') || a.includes('on)')) score += 15;
       if (answer.includes('return') && (answer.includes('[') || answer.includes('('))) score += 15;
@@ -26,6 +32,7 @@ const REF_ANSWERS = {
     rubric: (answer) => {
       let score = 0;
       const a = answer.toLowerCase();
+      const n = normAnswer(answer);
       if (a.includes('class') && (a.includes('lru') || a.includes('cache'))) score += 20;
       if (a.includes('ordereddict') || a.includes('linked') || a.includes('链表')) score += 20;
       if (answer.includes('def get') && answer.includes('def put')) score += 20;
@@ -41,6 +48,7 @@ const REF_ANSWERS = {
     rubric: (answer) => {
       let score = 0;
       const a = answer.toLowerCase();
+      const n = normAnswer(answer);
       if (a.includes('counter') || a.includes('count') || a.includes('频率')) score += 25;
       if (a.includes('heap') || a.includes('桶') || a.includes('bucket') || a.includes('most_common')) score += 25;
       if (a.includes('o(n)') || a.includes('on)')) score += 20;
@@ -56,6 +64,7 @@ const REF_ANSWERS = {
     rubric: (answer) => {
       let score = 0;
       const a = answer.toLowerCase();
+      const n = normAnswer(answer);
       if (a.includes('双指针') || a.includes('two pointer') || a.includes('left') && a.includes('right')) score += 25;
       if (a.includes('栈') || a.includes('stack') || a.includes('单调')) score += 15; // alternative approach
       if (a.includes('o(n)')) score += 20;
@@ -74,10 +83,16 @@ const REF_ANSWERS = {
     max: 60,
     rubric: (answer) => {
       let score = 0;
-      if (answer.includes('42')) score += 30;
-      if (answer.includes('n(n+1)') || answer.includes('n*(n+1)') || answer.includes('n²+n') || answer.includes('n^2+n')) score += 15;
-      if (answer.includes('差') || answer.includes('递增') || answer.includes('等差')) score += 15;
-      return { score: Math.min(score, 60), breakdown: { correct_answer: answer.includes('42'), formula: answer.includes('n(n+1)'), reasoning: answer.includes('差') || answer.includes('递增') }};
+      // Normalize: remove spaces, markdown, LaTeX for matching
+      const norm = answer.replace(/\s+/g, '').replace(/[*$_{}]/g, '').toLowerCase();
+      if (norm.includes('42')) score += 25;
+      // Formula check: n(n+1), n²+n, n^2+n, n*n+n (all variants)
+      if (norm.includes('n(n+1)') || norm.includes('n*(n+1)') || norm.includes('n²+n') || norm.includes('n^2+n') || norm.includes('n*n+n')) score += 15;
+      // Reasoning: give credit for each keyword found
+      if (norm.includes('差') || norm.includes('递增') || norm.includes('等差')) score += 10;
+      if (norm.includes('验证') || norm.includes('验证') || norm.includes('代入')) score += 5;
+      if (answer.length > 200) score += 5;
+      return { score: Math.min(score, 60), breakdown: { correct_answer: norm.includes('42'), formula: norm.includes('n^2+n') || norm.includes('n(n+1)'), reasoning: norm.includes('差') || norm.includes('递增'), detail: answer.length > 200 }};
     }
   },
   "过桥问题": {
@@ -87,8 +102,9 @@ const REF_ANSWERS = {
     max: 75,
     rubric: (answer) => {
       let score = 0;
-      if (answer.includes('17')) score += 35;
-      if (answer.includes('1') && answer.includes('2') && answer.includes('5') && answer.includes('10')) score += 15;
+      const n = normAnswer(answer);
+      if (n.includes('17')) score += 35;
+      if (n.includes('1') && n.includes('2') && n.includes('5') && n.includes('10')) score += 15;
       if (answer.includes('回') || answer.includes('返回') || answer.includes('back')) score += 15;
       if (answer.length > 200) score += 10;
       return { score: Math.min(score, 75), breakdown: { correct_answer: answer.includes('17'), steps: answer.includes('回') || answer.includes('返回'), detail: answer.length > 200 }};
@@ -101,10 +117,11 @@ const REF_ANSWERS = {
     max: 90,
     rubric: (answer) => {
       let score = 0;
-      if (answer.includes('2/3') || answer.includes('66') || answer.includes('三分之二')) score += 30;
-      if (answer.includes('1/3') || answer.includes('33') || answer.includes('三分之一')) score += 15;
-      if (answer.includes('条件概率') || answer.includes('贝叶斯') || answer.includes('bayes')) score += 15;
-      if (answer.includes('主持人') || answer.includes('monty') || answer.includes('host')) score += 10;
+      const n = normAnswer(answer);
+      if (n.includes('2/3') || answer.includes('66') || answer.includes('三分之二')) score += 30;
+      if (n.includes('1/3') || n.includes('33%') || n.includes('三分之一')) score += 15;
+      if (n.includes('条件概率') || n.includes('贝叶斯') || n.includes('bayes')) score += 15;
+      if (n.includes('主持人') || n.includes('monty') || n.includes('host')) score += 10;
       if (answer.length > 300) score += 20;
       return { score: Math.min(score, 90), breakdown: { correct_prob: answer.includes('2/3'), initial_prob: answer.includes('1/3'), method: answer.includes('条件概率') || answer.includes('贝叶斯'), explanation: answer.length > 300 }};
     }
@@ -117,11 +134,11 @@ const REF_ANSWERS = {
     rubric: (answer) => {
       let score = 0;
       const a = answer;
-      if (a.includes('1.9') || a.includes('2%') || a.includes('1.94') || a.includes('1.96') || a.includes('2%')) score += 30;
-      if (a.includes('贝叶斯') || a.includes('bayes') || a.includes('P(')) score += 20;
-      if (a.includes('0.99') || a.includes('0.001') || a.includes('0.05')) score += 15;
-      if (a.includes('假阳性') || a.includes('false positive')) score += 10;
-      if (a.includes('基础概率') || a.includes('先验') || a.includes('prior') || a.includes('发病率')) score += 10;
+      if (n.includes('1.9') || n.includes('2%') || n.includes('1.94') || n.includes('1.96')) score += 30;
+      if (n.includes('贝叶斯') || n.includes('bayes') || n.includes('p(')) score += 20;
+      if (n.includes('0.99') || n.includes('0.001') || n.includes('0.05')) score += 15;
+      if (n.includes('假阳性') || n.includes('falsepositive')) score += 10;
+      if (n.includes('基础概率') || n.includes('先验') || n.includes('prior') || n.includes('发病率')) score += 10;
       if (answer.length > 400) score += 15;
       return { score: Math.min(score, 100), breakdown: { correct_answer: a.includes('1.9') || a.includes('2%'), formula: a.includes('贝叶斯'), numbers: a.includes('0.99'), insight: a.includes('假阳性') || a.includes('基础概率') }};
     }
@@ -214,7 +231,7 @@ const REF_ANSWERS = {
     rubric: (answer) => {
       let score = 0;
       const steps = ['1', '2', '3', '4', '5'];
-      const found = steps.filter(s => answer.includes(s + ')') || answer.includes(s + '.') || answer.includes('步骤' + s) || answer.includes('Step ' + s));
+      const found = steps.filter(s => n.includes(s+')') || n.includes(s+'.') || n.includes('步骤'+s) || n.includes('step'+s));
       score += found.length * 10;
       // Check for specific content
       if (answer.includes('*') || answer.includes('△') || answer.includes('^')) score += 10; // triangle
@@ -233,9 +250,9 @@ const REF_ANSWERS = {
       // Check for markdown table
       if (a.includes('|') && a.includes('---')) score += 20;
       // Check for language names
-      if (a.includes('Python') || a.includes('python')) score += 10;
-      if (a.includes('JavaScript') || a.includes('javascript') || a.includes('JS')) score += 10;
-      if (a.includes('Rust') || a.includes('rust')) score += 10;
+      if (n.includes('python')) score += 10;
+      if (n.includes('javascript') || n.includes('js')) score += 10;
+      if (n.includes('rust')) score += 10;
       // Check for required columns
       const cols = ['类型', 'GC', '并发', '适用'];
       const found = cols.filter(c => a.includes(c));
@@ -254,16 +271,17 @@ const REF_ANSWERS = {
       const charCount = answer.replace(/\s/g, '').length;
       if (charCount > 100 && charCount < 400) score += 15;
       // Check no '的' (hard constraint)
-      const deCount = (answer.match(/的/g) || []).length;
+      const rawAnswer = answer;
+      const deCount = (rawAnswer.match(/的/g) || []).length;
       if (deCount === 0) score += 25;
       else if (deCount <= 3) score += 10;
       // Check for self-report of violations
-      if (answer.includes('违反') || answer.includes('约束') || answer.includes('的字') || answer.includes('violation')) score += 20;
+      if (n.includes('违反') || n.includes('约束') || n.includes('的字') || n.includes('violation')) score += 20;
       // Check sentence structure (12 chars per sentence is hard to verify)
-      if (answer.includes('比喻') || answer.includes('像') || answer.includes('如') || answer.includes('似')) score += 15;
+      if (n.includes('比喻') || n.includes('像') || n.includes('如') || n.includes('似')) score += 15;
       if (answer.length > 100) score += 15;
       // Bonus for actually trying all constraints
-      if (deCount <= 1 && answer.includes('约束')) score += 10;
+      if (deCount <= 1 && n.includes('约束')) score += 10;
       return { score: Math.min(score, 100), breakdown: { length: charCount > 100, no_de: deCount === 0, self_report: answer.includes('违反') || answer.includes('约束'), metaphor: answer.includes('比喻') || answer.includes('像') }};
     }
   },
@@ -273,7 +291,8 @@ const REF_ANSWERS = {
     max: 60,
     rubric: (answer) => {
       let score = 0;
-      if (answer.includes('Guido') || answer.includes('guido') || answer.includes('吉多') || answer.includes('范罗苏姆')) score += 20;
+      const n = normAnswer(answer);
+      if (n.includes('Guido') || answer.includes('guido') || answer.includes('吉多') || answer.includes('范罗苏姆')) score += 20;
       if (answer.includes('可读') || answer.includes('readab')) score += 20;
       if (answer.includes('面向对象') || answer.includes('命令式') || answer.includes('函数式') || answer.includes('object')) score += 20;
       return { score: Math.min(score, 60), breakdown: { creator: answer.includes('Guido'), philosophy: answer.includes('可读'), paradigms: answer.includes('面向对象') }};
