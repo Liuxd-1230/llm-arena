@@ -445,7 +445,15 @@ function selectQ(dim,diff,name){S.q=QS.find(q=>q.dim===dim&&q.diff===diff&&q.nam
 function renderCollectPanel(){
   const q=S.q;const dim=getDim(q.dim);const dm=getDiff(q.diff);const existing=S.entries.filter(e=>e.qName===q.name);
   return`<div class="card" id="collectPanel" style="margin-top:20px;">
-    <div class="card-header"><div style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;"><i class="${dim.icon}" style="color:${dim.color};font-size:16px;"></i> 收集答案</div><span style="font-size:11px;color:var(--t4);">${q.name} · ${dm.emoji} · 上限${dm.max}</span></div>
+    <div class="card-header">
+      <div style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;">
+        <i class="${dim.icon}" style="color:${dim.color};font-size:16px;"></i> 收集答案
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span style="font-size:11px;padding:3px 8px;border-radius:100px;background:var(--gn2);color:var(--gn);">⚡自动评分</span>
+        <span style="font-size:11px;padding:3px 8px;border-radius:100px;background:var(--ac2);color:var(--ac);">🤖强模型评测</span>
+      </div>
+    </div>
     <div class="card-body">
       <div class="label">题目Prompt</div>
       <div style="background:var(--s2);border:1px solid var(--bdr);border-radius:var(--r8);padding:14px;font-size:13px;line-height:1.7;color:var(--t2);margin-bottom:12px;">${q.prompt}</div>
@@ -458,6 +466,7 @@ function renderCollectPanel(){
       <div style="display:flex;gap:8px;margin-bottom:16px;">
         <button class="btn btn-primary" onclick="addEntry()"><i class="ri-add-line"></i> 提交${dim.autoScore?'（⚡自动评分）':''}</button>
         ${dim.isCode?`<button class="btn btn-outline" onclick="runFuncCheck()"><i class="ri-checkbox-circle-line"></i> 功能检测</button>`:''}
+        <button class="btn btn-outline" onclick="copyForLLMJudgeNew()" title="复制完整Prompt给强模型评分"><i class="ri-robot-line"></i> 复制给强模型</button>
       </div>
       ${existing.length>0?`
       <div class="label" style="margin-top:16px;">已收集 (${existing.length})</div>
@@ -798,7 +807,25 @@ function doImportScore() {
 function copyForLLMJudge(entryId) {
   const entry = S.entries.find(e => e.id === entryId);
   if (!entry) return;
-  const prompt = `你是LLM Arena的评分员。请根据以下评分准则对模型回答打分。
+  const judgePrompt = buildJudgePrompt(entry.prompt, entry.answer);
+  copyText(judgePrompt);
+  toast('已复制评分Prompt，发给强模型后回来导入');
+}
+
+// Copy for new (not yet submitted) answer
+function copyForLLMJudgeNew() {
+  const prompt = S.q?.prompt;
+  const answer = document.getElementById('cAnswer')?.value?.trim();
+  if (!prompt) { toast('请先选择题目', 'ri-error-warning-line'); return; }
+  if (!answer) { toast('请先粘贴模型回答', 'ri-error-warning-line'); return; }
+  const judgePrompt = buildJudgePrompt(prompt, answer);
+  copyText(judgePrompt);
+  toast('已复制评分Prompt，发给强模型后回来导入');
+}
+
+function buildJudgePrompt(questionPrompt, answer) {
+  const rubricSection = (typeof LONG_DOCS !== 'undefined' && getLongDocForQuestion) ? '' : '';
+  return `你是LLM Arena的评分员。请根据以下评分准则对模型回答打分。
 
 ## 评分维度 (总分100)
 准确性 (30): 事实正确性 + 逻辑严密性
@@ -807,16 +834,13 @@ function copyForLLMJudge(entryId) {
 创意与洞察 (20): 原创性 + 实用性
 
 ## 题目
-${entry.prompt}
+${questionPrompt}
 
 ## 模型回答
-${entry.answer}
+${answer}
 
 ## 输出格式 (严格JSON)
 {"total_score": 85, "accuracy": {"score": 25, "max": 30, "comment": "..."}, "completeness": {"score": 20, "max": 25, "comment": "..."}, "expression": {"score": 22, "max": 25, "comment": "..."}, "insight": {"score": 18, "max": 20, "comment": "..."}, "highlights": ["亮点"], "improvements": ["改进"], "overall_comment": "总评"}`;
-
-  copyText(prompt);
-  toast('已复制评分Prompt，发给强模型后回来导入');
 }
 
 function toast(msg,icon='ri-check-line'){const t=document.getElementById('toast');t.querySelector('span').textContent=msg;t.querySelector('i').className=icon;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);}
