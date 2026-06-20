@@ -279,7 +279,6 @@ body{font-family:var(--sans);background:var(--s0);color:var(--t1);line-height:1.
       <span style="font-size:12px;color:var(--t3);" id="thumbCount"></span>
     </div>
     <div style="display:flex;align-items:center;gap:8px;">
-      <button class="btn btn-ghost btn-sm" onclick="switchToBlindFromThumb()"><i class="ri-list-ordered"></i> 列表模式</button>
       <button class="btn btn-primary btn-sm" onclick="exitThumbView();showView('compare');"><i class="ri-bar-chart-grouped-line"></i> 查看结果</button>
     </div>
   </div>
@@ -297,36 +296,36 @@ body{font-family:var(--sans);background:var(--s0);color:var(--t1);line-height:1.
     <span style="font-size:12px;color:var(--t4);" id="previewProgress"></span>
   </div>
   <div class="preview-main">
-    <iframe class="preview-frame" id="previewFrame"></iframe>
+    <iframe class="preview-frame" id="previewFrame" sandbox="allow-same-origin allow-scripts"></iframe>
     <div class="preview-rubric" id="previewRubric">
       <h4><i class="ri-list-check-3" style="color:var(--ac)"></i> 前端代码评分标准</h4>
       <div class="preview-rubric-item">
-        <div class="preview-rubric-label">🎨 视觉设计 (30分)</div>
-        <div class="preview-rubric-desc">整体美感、配色协调、排版精致度、视觉层次感</div>
+        <div class="preview-rubric-label">🎨 视觉设计 (35分)</div>
+        <div class="preview-rubric-desc">整体美感、配色协调、排版精致度、视觉层次感、设计风格统一</div>
         <div class="preview-score-row">
-          <input type="number" class="preview-score-input" id="scoreVisual" min="0" max="30" placeholder="0">
+          <input type="number" class="preview-score-input" id="scoreVisual" min="0" max="35" placeholder="0">
+          <span style="color:var(--t4);font-size:12px">/ 35</span>
+        </div>
+      </div>
+      <div class="preview-rubric-item">
+        <div class="preview-rubric-label">⚡ 交互体验 (30分)</div>
+        <div class="preview-rubric-desc">悬停效果、过渡动画、响应式适配、用户反馈、细节打磨</div>
+        <div class="preview-score-row">
+          <input type="number" class="preview-score-input" id="scoreInteract" min="0" max="30" placeholder="0">
           <span style="color:var(--t4);font-size:12px">/ 30</span>
         </div>
       </div>
       <div class="preview-rubric-item">
-        <div class="preview-rubric-label">⚡ 交互体验 (25分)</div>
-        <div class="preview-rubric-desc">悬停效果、过渡动画、响应式适配、用户反馈</div>
+        <div class="preview-rubric-label">📐 布局结构 (15分)</div>
+        <div class="preview-rubric-desc">元素对齐、间距节奏、信息层次、布局合理性</div>
         <div class="preview-score-row">
-          <input type="number" class="preview-score-input" id="scoreInteract" min="0" max="25" placeholder="0">
-          <span style="color:var(--t4);font-size:12px">/ 25</span>
-        </div>
-      </div>
-      <div class="preview-rubric-item">
-        <div class="preview-rubric-label">🏗️ 代码质量 (25分)</div>
-        <div class="preview-rubric-desc">语义化HTML、CSS组织、命名规范、无冗余代码</div>
-        <div class="preview-score-row">
-          <input type="number" class="preview-score-input" id="scoreCode" min="0" max="25" placeholder="0">
-          <span style="color:var(--t4);font-size:12px">/ 25</span>
+          <input type="number" class="preview-score-input" id="scoreCode" min="0" max="15" placeholder="0">
+          <span style="color:var(--t4);font-size:12px">/ 15</span>
         </div>
       </div>
       <div class="preview-rubric-item">
         <div class="preview-rubric-label">💡 创意完成度 (20分)</div>
-        <div class="preview-rubric-desc">题目要求的完成度、创意发挥、设计独特性</div>
+        <div class="preview-rubric-desc">题目要求的完成度、创意发挥、设计独特性、整体完成感</div>
         <div class="preview-score-row">
           <input type="number" class="preview-score-input" id="scoreCreative" min="0" max="20" placeholder="0">
           <span style="color:var(--t4);font-size:12px">/ 20</span>
@@ -495,6 +494,7 @@ function getDiff(id){return DIFFS.find(d=>d.id===id);}
 function isAutoDim(dimId){const d=getDim(dimId);return d&&d.autoScore;}
 function hasAutoQ(qName){return typeof hasAutoScore==='function'&&hasAutoScore(qName);}
 function escHtml(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function escSrcdoc(s){return(s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;');}
 function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
 function getLongDocForQuestion(qName){return{"信息提取":"doc_python","长文总结":"doc_microservices","矛盾检测":"doc_ceo_jan","跨文档推理":"doc_investment"}[qName]||null;}
 
@@ -649,8 +649,7 @@ function renderCollectPanel(){
       ${S.entries.filter(e=>(e.score===null||e.score===undefined)&&(e.dimId===dim.id)).length>0?`<div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--bdr);">
         ${dim.id==='code_frontend'?`
         <div style="display:flex;gap:8px;">
-          <button class="btn btn-primary" onclick="startThumbView('${dim.id}')" style="flex:1;justify-content:center;"><i class="ri-image-line"></i> 🖼️ 缩略图盲测 (${S.entries.filter(e=>(e.score===null||e.score===undefined)&&(e.dimId===dim.id)).length}个待测)</button>
-          <button class="btn btn-outline" onclick="startBlind('${dim.id}')"><i class="ri-list-ordered"></i> 列表模式</button>
+          <button class="btn btn-primary" onclick="startThumbView('${dim.id}')" style="flex:1;justify-content:center;"><i class="ri-image-line"></i> 缩略图盲测 (${S.entries.filter(e=>(e.score===null||e.score===undefined)&&(e.dimId===dim.id)).length}个待测)</button>
         </div>`:`
         <button class="btn btn-primary" onclick="startBlind('${dim.id}')" style="width:100%;justify-content:center;"><i class="ri-play-line"></i> 全屏盲测 (${S.entries.filter(e=>(e.score===null||e.score===undefined)&&(e.dimId===dim.id)).length}个待测)</button>`}
       </div>`:''}
@@ -787,8 +786,8 @@ function renderThumbGrid(){
     const dim=getDim(item.dimId);
     const dm=getDiff(item.qDiff);
     const scored=item.score!==null&&item.score!==undefined;
-    return`<div class="thumb-card ${scored?'thumb-card-scored':''}" ${scored?`data-score="${item.score}分"`:''} onclick="openPreview(${idx})">
-      <div class="thumb-frame-wrap"><iframe srcdoc="${escHtml(item.answer)}" loading="lazy"></iframe></div>
+    return`<div class="thumb-card ${scored?'thumb-card-scored':''}" ${scored?`data-score="${item.score}分"`:''} onclick="event.stopPropagation();openPreview(${idx})">
+      <div class="thumb-frame-wrap"><iframe sandbox="" srcdoc="${escSrcdoc(item.answer)}" loading="lazy"></iframe></div>
       <div class="thumb-card-info">
         <span class="thumb-card-id">${item.blindId}</span>
         <span class="thumb-card-q">${item.qName}</span>
@@ -998,7 +997,8 @@ function drawRadar(models,colors){
       const val=(m.dimAvg[d.id]||0)/max;
       return`${cx+r*Math.min(val,1)*Math.cos(angles[i])},${cy+r*Math.min(val,1)*Math.sin(angles[i])}`;
     }).join(' ');
-    html+=`<polygon points="${pts}" fill="${colors[mi%colors.length]}15" stroke="${colors[mi%colors.length]}" stroke-width="2" opacity="0.8"/>`;
+    const fillColor=models.length>=2?`${colors[mi%colors.length]}30`:`${colors[mi%colors.length]}15`;
+    html+=`<polygon points="${pts}" fill="${fillColor}" stroke="${colors[mi%colors.length]}" stroke-width="2" opacity="0.9"/>`;
     // Dots
     DIMS.forEach((d,i)=>{
       const max=getDiff('diamond').max;
