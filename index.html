@@ -359,7 +359,7 @@ const QS=[
 ];
 
 // ===== State =====
-let S={view:'welcome',dim:null,diff:'all',q:null,entries:[],blindQueue:[],blindIdx:0,revealed:false,nextId:1};
+let S={view:'welcome',dim:null,diff:'all',q:null,entries:[],blindQueue:[],blindIdx:0,revealed:false,nextId:1,submitMode:'auto'};
 try{const s=localStorage.getItem('llm_arena');if(s){const d=JSON.parse(s);S.entries=d.entries||[];S.nextId=d.nextId||1;S.revealed=d.revealed||false;}}catch(e){}
 function save(){localStorage.setItem('llm_arena',JSON.stringify({entries:S.entries,nextId:S.nextId,revealed:S.revealed}));}
 
@@ -440,7 +440,7 @@ function renderDim(el){
     ${S.q?renderCollectPanel():''}`;
 }
 
-function selectQ(dim,diff,name){S.q=QS.find(q=>q.dim===dim&&q.diff===diff&&q.name===name);render();setTimeout(()=>{const p=document.getElementById('collectPanel');if(p)p.scrollIntoView({behavior:'smooth',block:'start'});},100);}
+function selectQ(dim,diff,name){S.q=QS.find(q=>q.dim===dim&&q.diff===diff&&q.name===name);submitMode='auto';render();setTimeout(()=>{const p=document.getElementById('collectPanel');if(p)p.scrollIntoView({behavior:'smooth',block:'start'});},100);}
 
 function renderCollectPanel(){
   const q=S.q;const dim=getDim(q.dim);const dm=getDiff(q.diff);const existing=S.entries.filter(e=>e.qName===q.name);
@@ -464,8 +464,14 @@ function renderCollectPanel(){
       <datalist id="modelList">${[...new Set(S.entries.map(e=>e.model))].map(m=>`<option value="${m}">`).join('')}</datalist>
       <div class="label">粘贴模型回答</div>
       <textarea class="textarea" id="cAnswer" placeholder="粘贴模型回答..." style="margin-bottom:12px;"></textarea>
+      ${dim.autoScore?`
+      <div class="label">提交模式</div>
+      <div style="display:flex;gap:8px;margin-bottom:12px;">
+        <button class="diff-pill active" id="modeAuto" onclick="setSubmitMode('auto')"><i class="ri-flashlight-line"></i> ⚡自动评分</button>
+        <button class="diff-pill" id="modeQueue" onclick="setSubmitMode('queue')"><i class="ri-robot-line"></i> 🤖提交待测区</button>
+      </div>`:''}
       <div style="display:flex;gap:8px;margin-bottom:16px;">
-        <button class="btn btn-primary" onclick="addEntry()"><i class="ri-add-line"></i> 提交${dim.autoScore?'（⚡自动评分）':''}</button>
+        <button class="btn btn-primary" id="submitBtn" onclick="addEntry()"><i class="ri-add-line"></i> ${dim.autoScore?'⚡自动评分':'提交'}</button>
         ${dim.isCode?`<button class="btn btn-outline" onclick="runFuncCheck()"><i class="ri-checkbox-circle-line"></i> 功能检测</button>`:''}
         <button class="btn btn-outline" onclick="copyForLLMJudgeNew()" title="复制完整Prompt给强模型评分"><i class="ri-robot-line"></i> 复制给强模型</button>
       </div>
@@ -502,31 +508,40 @@ function renderCollectPanel(){
             ${e.autoDetail?`<div style="font-size:11px;font-weight:600;color:var(--gn);margin-top:8px;">⚡ 自动评分详情</div><div style="font-size:11px;color:var(--t3);">${JSON.stringify(e.autoDetail.breakdown||{})}</div>`:''}
           </div>
         </div>`;}).join('')}</div>`:''}
-      ${S.entries.filter(e=>e.score===null||e.score===undefined).length>0&&!dim.autoScore?`<div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--bdr);"><button class="btn btn-primary" onclick="startBlind()" style="width:100%;justify-content:center;"><i class="ri-play-line"></i> 全屏盲测 (${S.entries.filter(e=>e.score===null||e.score===undefined).length}个待测)</button></div>`:''}
+      ${S.entries.filter(e=>(e.score===null||e.score===undefined)&&(e.dimId===dim.id)).length>0?`<div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--bdr);"><button class="btn btn-primary" onclick="startBlind()" style="width:100%;justify-content:center;"><i class="ri-play-line"></i> 全屏盲测 (${S.entries.filter(e=>(e.score===null||e.score===undefined)&&(e.dimId===dim.id)).length}个待测)</button></div>`:''}
     </div>
   </div>`;
 }
 
 // ===== Add Entry =====
+let submitMode='auto'; // 'auto' or 'queue'
+function setSubmitMode(mode){
+  submitMode=mode;
+  document.getElementById('modeAuto')?.classList.toggle('active',mode==='auto');
+  document.getElementById('modeQueue')?.classList.toggle('active',mode==='queue');
+  const btn=document.getElementById('submitBtn');
+  if(btn)btn.innerHTML=mode==='auto'?'<i class="ri-add-line"></i> ⚡自动评分':'<i class="ri-add-line"></i> 🤖提交待测区';
+}
 function addEntry(){
   const model=document.getElementById('cModel')?.value?.trim();
   const answer=document.getElementById('cAnswer')?.value?.trim();
   if(!model){toast('请输入模型名称','ri-error-warning-line');return;}
   if(!answer){toast('请粘贴模型回答','ri-error-warning-line');return;}
+  if(!S.q||!S.dim){toast('请先选择题目','ri-error-warning-line');return;}
   const dim=getDim(S.dim);
   const blindId='#'+String(S.nextId).padStart(3,'0');
   const entry={id:S.nextId,blindId,model,dimId:S.dim,qName:S.q.name,qDiff:S.q.diff,prompt:S.q.prompt,answer,score:null,note:'',autoScore:false};
   S.nextId++;
 
-  // Auto-score if objective dimension
-  if(dim.autoScore&&hasAutoQ(S.q.name)){
+  // Auto-score if mode is auto AND question has auto-score
+  if(submitMode==='auto'&&dim.autoScore&&hasAutoQ(S.q.name)){
     const result=autoScore(answer,S.q.name);
     if(result){entry.score=result.total_score;entry.note='自动评分';entry.autoScore=true;entry.autoDetail=result;}
   }
 
   S.entries.push(entry);save();
   document.getElementById('cModel').value='';document.getElementById('cAnswer').value='';
-  toast(entry.autoScore?`已评分 ${blindId}: ${entry.score}分⚡`:`已添加 ${blindId}`);
+  toast(entry.autoScore?`已评分 ${blindId}: ${entry.score}分⚡`:`已添加 ${blindId} → 待测区`);
   renderSidebar();render();
 }
 
@@ -567,10 +582,10 @@ function runFuncCheck(){
   document.getElementById('funcModal').classList.add('show');
 }
 
-// ===== Blind Test (subjective only) =====
+// ===== Blind Test (subjective + queued objective) =====
 function startBlind(){
-  const queue=S.entries.filter(e=>(e.score===null||e.score===undefined)&&!isAutoDim(e.dimId));
-  if(!queue.length){toast('没有待测主观题','ri-error-warning-line');return;}
+  const queue=S.entries.filter(e=>(e.score===null||e.score===undefined));
+  if(!queue.length){toast('没有待测题目','ri-error-warning-line');return;}
   S.blindQueue=shuffle([...queue]);S.blindIdx=0;showBlindItem();
   document.getElementById('blindOverlay').classList.add('show');
 }
