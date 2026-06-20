@@ -3,7 +3,7 @@
 
 // Normalize answer text for matching: remove markdown, LaTeX, extra spaces
 function normAnswer(answer) {
-  return (answer || '').replace(/\s+/g, '').replace(/[*$_{}\\()]/g, '').replace(/`/g, '').toLowerCase();
+  return (answer || '').replace(/\s+/g, '').replace(/[*$_{}\\]/g, '').replace(/`/g, '').toLowerCase();
 }
 
 const REF_ANSWERS = {
@@ -59,19 +59,29 @@ const REF_ANSWERS = {
   "接雨水": {
     key_concepts: ["双指针", "two pointer", "左右最大值", "单调栈", "O(n)", "O(1)"],
     reference: "双指针法：维护左右两侧最大高度，从较矮的一侧向中间移动。时间O(n)空间O(1)。",
-    code_patterns: ["left", "right", "max_left", "max_right", "while"],
     max: 100,
     rubric: (answer) => {
       let score = 0;
       const a = answer.toLowerCase();
       const n = normAnswer(answer);
-      if (a.includes('双指针') || a.includes('two pointer') || a.includes('left') && a.includes('right')) score += 25;
-      if (a.includes('栈') || a.includes('stack') || a.includes('单调')) score += 15; // alternative approach
-      if (a.includes('o(n)')) score += 20;
-      if (a.includes('o(1)') || a.includes('空间')) score += 15;
-      if (answer.length > 300) score += 15;
-      if (answer.includes('def ')) score += 10;
-      return { score: Math.min(score, 100), breakdown: { approach: score >= 25, time: a.includes('o(n)'), space: a.includes('o(1)') || a.includes('空间'), explanation: answer.length > 300 }};
+      const len = answer.length;
+      const hasTwoPointer = n.includes('双指针') || n.includes('twopointer') || (n.includes('left') && n.includes('right'));
+      if (hasTwoPointer) score += 15;
+      if (n.includes('o(n)')) score += 10;
+      if (n.includes('o(1)') || n.includes('空间复杂度')) score += 10;
+      if (n.includes('def') && n.includes('while')) score += 5;
+      if (n.includes('木桶') || n.includes('短板') || n.includes('限制因素')) score += 8;
+      if (n.includes('为什么') || n.includes('原理') || n.includes('核心思想')) score += 7;
+      if (n.includes('单调栈') || n.includes('monotonic') || n.includes('动态规划') || n.includes('dp')) score += 8;
+      if (n.includes('示例') || n.includes('测试') || n.includes('输出') || n.includes('print')) score += 7;
+      const codeLines = answer.split('\n').filter(l => l.trim().length > 0);
+      const commentLines = codeLines.filter(l => l.includes('#') || l.includes('"""') || l.includes("'''"));
+      if (commentLines.length >= 3) score += 8; else if (commentLines.length >= 1) score += 4;
+      if (answer.includes('List[') || answer.includes('-> ')) score += 5;
+      if (len > 1500) score += 7; else if (len > 800) score += 4; else if (len > 400) score += 2;
+      const hasSections = (answer.match(/#{1,3}\s/g) || []).length >= 2;
+      if (hasSections) score += 5;
+      return { score: Math.min(score, 100), breakdown: { basic: hasTwoPointer ? 40 : 15, depth: score > 40 ? 30 : 10, quality: score > 70 ? 30 : 10, explanation: `算法:${hasTwoPointer?'✓':'✗'} 解释:${len>800?'深':'浅'} 替代:${n.includes('单调栈')?'有':'无'}` }};
     }
   },
 
