@@ -144,6 +144,7 @@ const REF_ANSWERS = {
     rubric: (answer) => {
       let score = 0;
       const a = answer;
+      const n = normAnswer(answer);
       if (n.includes('1.9') || n.includes('2%') || n.includes('1.94') || n.includes('1.96')) score += 30;
       if (n.includes('贝叶斯') || n.includes('bayes') || n.includes('p(')) score += 20;
       if (n.includes('0.99') || n.includes('0.001') || n.includes('0.05')) score += 15;
@@ -240,6 +241,7 @@ const REF_ANSWERS = {
     max: 75,
     rubric: (answer) => {
       let score = 0;
+      const n = normAnswer(answer);
       const steps = ['1', '2', '3', '4', '5'];
       const found = steps.filter(s => n.includes(s+')') || n.includes(s+'.') || n.includes('步骤'+s) || n.includes('step'+s));
       score += found.length * 10;
@@ -257,6 +259,7 @@ const REF_ANSWERS = {
     rubric: (answer) => {
       let score = 0;
       const a = answer;
+      const n = normAnswer(answer);
       // Check for markdown table
       if (a.includes('|') && a.includes('---')) score += 20;
       // Check for language names

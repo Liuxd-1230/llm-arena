@@ -170,8 +170,13 @@ body{font-family:var(--sans);background:var(--s0);color:var(--t1);line-height:1.
 .func-check-item{display:flex;align-items:center;gap:8px;padding:6px 0;font-size:12px}
 
 @media(max-width:900px){
-  .main-grid{grid-template-columns:1fr}.sidebar{display:none}.content{padding:16px}
+  .main-grid{grid-template-columns:1fr}.content{padding:16px}
   .dim-grid{grid-template-columns:1fr}.q-grid{grid-template-columns:1fr}
+  .nav-hamburger{display:flex!important}
+  .sidebar{position:fixed;top:56px;left:0;bottom:0;width:260px;z-index:90;transform:translateX(-100%);transition:transform 0.2s;box-shadow:4px 0 24px rgba(0,0,0,0.4)}
+  .sidebar.open{transform:translateX(0)}
+  .sidebar-overlay{display:none;position:fixed;inset:0;top:56px;background:rgba(0,0,0,0.5);z-index:80}
+  .sidebar-overlay.show{display:block}
 }
 </style>
 </head>
@@ -185,12 +190,14 @@ body{font-family:var(--sans);background:var(--s0);color:var(--t1);line-height:1.
       <span style="font-size:11px;color:var(--t4);font-weight:400;">v2.0</span>
     </div>
     <div style="display:flex;align-items:center;gap:8px">
+      <button class="btn-icon nav-hamburger" style="display:none" onclick="toggleSidebar()"><i class="ri-menu-line"></i></button>
       <button class="btn btn-ghost btn-sm" onclick="exportAll()"><i class="ri-download-2-line"></i> 导出</button>
       <button class="btn btn-outline btn-sm" onclick="showRevealModal()"><i class="ri-eye-line"></i> 揭盲</button>
     </div>
   </div>
 </nav>
 
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
 <div class="main-grid">
   <aside class="sidebar" id="sidebar"></aside>
   <main class="content" id="main"></main>
@@ -386,6 +393,18 @@ function fallbackCopy(text){
 }
 
 // ===== Sidebar =====
+function toggleSidebar(){
+  const sb=document.getElementById('sidebar');
+  const ov=document.getElementById('sidebarOverlay');
+  sb.classList.toggle('open');
+  ov.classList.toggle('show');
+}
+function closeSidebar(){
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('sidebarOverlay').classList.remove('show');
+}
+
+// ===== Sidebar =====
 function renderSidebar(){
   document.getElementById('sidebar').innerHTML=`
     <div class="sb-section"><div class="sb-label">评估维度</div>
@@ -402,8 +421,8 @@ function renderSidebar(){
 }
 
 // ===== Navigation =====
-function showView(v){S.view=v;S.dim=null;renderSidebar();render();}
-function selectDim(id){S.dim=id;S.diff='all';S.q=null;S.view='dim';renderSidebar();render();}
+function showView(v){S.view=v;S.dim=null;closeSidebar();renderSidebar();render();}
+function selectDim(id){S.dim=id;S.diff='all';S.q=null;S.view='dim';closeSidebar();renderSidebar();render();}
 
 // ===== Main Render =====
 function render(){
@@ -440,7 +459,7 @@ function renderDim(el){
     ${S.q?renderCollectPanel():''}`;
 }
 
-function selectQ(dim,diff,name){S.q=QS.find(q=>q.dim===dim&&q.diff===diff&&q.name===name);submitMode='auto';render();setTimeout(()=>{const p=document.getElementById('collectPanel');if(p)p.scrollIntoView({behavior:'smooth',block:'start'});},100);}
+function selectQ(dim,diff,name){S.q=QS.find(q=>q.dim===dim&&q.diff===diff&&q.name===name);S.submitMode='auto';render();setTimeout(()=>{const p=document.getElementById('collectPanel');if(p)p.scrollIntoView({behavior:'smooth',block:'start'});},100);}
 
 function renderCollectPanel(){
   const q=S.q;const dim=getDim(q.dim);const dm=getDiff(q.diff);const existing=S.entries.filter(e=>e.qName===q.name);
@@ -508,15 +527,14 @@ function renderCollectPanel(){
             ${e.autoDetail?`<div style="font-size:11px;font-weight:600;color:var(--gn);margin-top:8px;">⚡ 自动评分详情</div><div style="font-size:11px;color:var(--t3);">${JSON.stringify(e.autoDetail.breakdown||{})}</div>`:''}
           </div>
         </div>`;}).join('')}</div>`:''}
-      ${S.entries.filter(e=>(e.score===null||e.score===undefined)&&(e.dimId===dim.id)).length>0?`<div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--bdr);"><button class="btn btn-primary" onclick="startBlind()" style="width:100%;justify-content:center;"><i class="ri-play-line"></i> 全屏盲测 (${S.entries.filter(e=>(e.score===null||e.score===undefined)&&(e.dimId===dim.id)).length}个待测)</button></div>`:''}
+      ${S.entries.filter(e=>(e.score===null||e.score===undefined)&&(e.dimId===dim.id)).length>0?`<div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--bdr);"><button class="btn btn-primary" onclick="startBlind('${dim.id}')" style="width:100%;justify-content:center;"><i class="ri-play-line"></i> 全屏盲测 (${S.entries.filter(e=>(e.score===null||e.score===undefined)&&(e.dimId===dim.id)).length}个待测)</button></div>`:''}
     </div>
   </div>`;
 }
 
 // ===== Add Entry =====
-let submitMode='auto'; // 'auto' or 'queue'
 function setSubmitMode(mode){
-  submitMode=mode;
+  S.submitMode=mode;
   document.getElementById('modeAuto')?.classList.toggle('active',mode==='auto');
   document.getElementById('modeQueue')?.classList.toggle('active',mode==='queue');
   const btn=document.getElementById('submitBtn');
@@ -534,7 +552,7 @@ function addEntry(){
   S.nextId++;
 
   // Auto-score if mode is auto AND question has auto-score
-  if(submitMode==='auto'&&dim.autoScore&&hasAutoQ(S.q.name)){
+  if(S.submitMode==='auto'&&dim.autoScore&&hasAutoQ(S.q.name)){
     const result=autoScore(answer,S.q.name);
     if(result){entry.score=result.total_score;entry.note='自动评分';entry.autoScore=true;entry.autoDetail=result;}
   }
@@ -583,8 +601,8 @@ function runFuncCheck(){
 }
 
 // ===== Blind Test (subjective + queued objective) =====
-function startBlind(){
-  const queue=S.entries.filter(e=>(e.score===null||e.score===undefined));
+function startBlind(dimFilter){
+  const queue=S.entries.filter(e=>(e.score===null||e.score===undefined)&&(!dimFilter||e.dimId===dimFilter));
   if(!queue.length){toast('没有待测题目','ri-error-warning-line');return;}
   S.blindQueue=shuffle([...queue]);S.blindIdx=0;showBlindItem();
   document.getElementById('blindOverlay').classList.add('show');
