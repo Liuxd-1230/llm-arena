@@ -242,6 +242,34 @@ body{font-family:var(--sans);background:var(--s0);color:var(--t1);line-height:1.
   </div>
 </div>
 
+<!-- Import Score Modal -->
+<div class="modal-bg" id="importModal">
+  <div class="modal-box" style="max-width:700px;">
+    <h3><i class="ri-braces-line"></i> 强模型评测 - 导入评分</h3>
+    <p>将强模型返回的JSON评分结果粘贴到下方，或手动输入分数。</p>
+    <div id="importTarget" style="font-size:13px;color:var(--t2);margin-bottom:12px;padding:8px 12px;background:var(--s2);border-radius:var(--r8);"></div>
+    <div class="label">评分方式</div>
+    <div style="display:flex;gap:8px;margin-bottom:12px;">
+      <button class="btn btn-outline btn-sm active" id="btnJsonMode" onclick="setImportMode('json')">粘贴JSON</button>
+      <button class="btn btn-outline btn-sm" id="btnManualMode" onclick="setImportMode('manual')">手动打分</button>
+    </div>
+    <div id="importJsonWrap">
+      <textarea id="importJson" placeholder='{"total_score": 85, "accuracy": {...}, "completeness": {...}, ...}' style="width:100%;min-height:180px;padding:14px;background:var(--s2);border:1px solid var(--bdr);border-radius:var(--r8);color:var(--t1);font-family:var(--mono);font-size:12px;line-height:1.5;resize:vertical;outline:none;"></textarea>
+    </div>
+    <div id="importManualWrap" style="display:none;">
+      <div style="display:flex;gap:12px;align-items:center;">
+        <input type="number" id="importManualScore" min="0" max="100" placeholder="分数" style="width:100px;padding:8px 12px;background:var(--s2);border:1px solid var(--bdr);border-radius:var(--r8);color:var(--t1);font-size:20px;font-weight:700;text-align:center;font-family:var(--mono);outline:none;">
+        <span style="font-size:14px;color:var(--t4);" id="importManualMax">/ 100</span>
+        <input type="text" id="importManualNote" placeholder="备注（可选）" style="flex:1;padding:8px 12px;background:var(--s2);border:1px solid var(--bdr);border-radius:var(--r8);color:var(--t1);font-size:13px;outline:none;font-family:var(--sans);">
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-outline" onclick="closeImportModal()">取消</button>
+      <button class="btn btn-primary" onclick="doImportScore()"><i class="ri-check-line"></i> 导入评分</button>
+    </div>
+  </div>
+</div>
+
 <!-- Func Check Modal -->
 <div class="modal-bg" id="funcModal">
   <div class="modal-box" style="max-width:700px;">
@@ -637,11 +665,16 @@ function renderEntries(el){
     ${unscored.length>0?`<div class="label">待评分 (${unscored.length})</div><div class="entry-list" style="margin-bottom:24px;">${unscored.map(e=>{const dim=getDim(e.dimId);return`
       <div class="entry-item"><span class="entry-blind-id">${e.blindId}</span><span style="font-size:13px;"><i class="${dim.icon}" style="color:${dim.color};font-size:14px;margin-right:4px;"></i>${dim.name}</span>
       <span style="font-size:13px;${S.revealed?'':'filter:blur(4px);user-select:none;'}">${e.model}</span><span style="font-size:12px;color:var(--t3);">${e.qName}</span>
-      <span class="entry-status pending">待评分</span><button class="btn btn-ghost btn-xs" onclick="deleteEntry(${e.id})"><i class="ri-delete-bin-line"></i></button></div>`;}).join('')}</div>`:''}
+      <span class="entry-status pending">待评分</span>
+      <button class="btn btn-ghost btn-xs" onclick="copyForLLMJudge(${e.id})" title="复制给强模型评分"><i class="ri-robot-line"></i></button>
+      <button class="btn btn-ghost btn-xs" onclick="openImportModal(${e.id})" title="导入评分"><i class="ri-braces-line"></i></button>
+      <button class="btn btn-ghost btn-xs" onclick="deleteEntry(${e.id})" title="删除"><i class="ri-delete-bin-line"></i></button></div>`;}).join('')}</div>`:''}
     ${scored.length>0?`<div class="label">已评分 (${scored.length})</div><div class="entry-list">${scored.map(e=>{const dim=getDim(e.dimId);return`
       <div class="entry-item"><span class="entry-blind-id">${e.blindId}</span><span style="font-size:13px;"><i class="${dim.icon}" style="color:${dim.color};font-size:14px;margin-right:4px;"></i>${dim.name}</span>
       <span style="font-size:13px;font-weight:600;">${e.model}</span><span style="font-size:12px;color:var(--t3);">${e.qName}</span>
-      <span class="entry-status scored">${e.score}分${e.autoScore?'⚡':''}</span><button class="btn btn-ghost btn-xs" onclick="deleteEntry(${e.id})"><i class="ri-delete-bin-line"></i></button></div>`;}).join('')}</div>`:''}`;
+      <span class="entry-status scored">${e.score}分${e.autoScore?'⚡':e.note==='强模型评测'?'🤖':''}</span>
+      <button class="btn btn-ghost btn-xs" onclick="openImportModal(${e.id})" title="重新评分"><i class="ri-refresh-line"></i></button>
+      <button class="btn btn-ghost btn-xs" onclick="deleteEntry(${e.id})" title="删除"><i class="ri-delete-bin-line"></i></button></div>`;}).join('')}</div>`:''}`;
 }
 
 // ===== Prompt View =====
@@ -671,6 +704,97 @@ function doReveal(){S.revealed=true;save();closeRevealModal();toast('已揭盲')
 // ===== Export =====
 function exportAll(){const b=new Blob([JSON.stringify(S,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=`llm-arena-${new Date().toISOString().slice(0,10)}.json`;a.click();toast('已导出');}
 function closeFuncModal(){document.getElementById('funcModal').classList.remove('show');}
+
+// ===== Import Score Modal =====
+let importTargetEntryId = null;
+function openImportModal(entryId) {
+  importTargetEntryId = entryId;
+  const entry = S.entries.find(e => e.id === entryId);
+  if (!entry) return;
+  const dim = getDim(entry.dimId);
+  const dm = getDiff(entry.qDiff);
+  document.getElementById('importTarget').innerHTML = `<strong>${entry.blindId}</strong> · ${dim.name} · ${entry.qName} · ${dm.emoji} 上限${dm.max}分 · 模型: ${entry.model}`;
+  document.getElementById('importManualMax').textContent = `/ ${dm.max}`;
+  document.getElementById('importManualScore').max = dm.max;
+  document.getElementById('importManualScore').value = entry.score || '';
+  document.getElementById('importManualNote').value = entry.note || '';
+  document.getElementById('importJson').value = '';
+  setImportMode('json');
+  document.getElementById('importModal').classList.add('show');
+}
+
+function closeImportModal() {
+  document.getElementById('importModal').classList.remove('show');
+  importTargetEntryId = null;
+}
+
+function setImportMode(mode) {
+  document.getElementById('importJsonWrap').style.display = mode === 'json' ? '' : 'none';
+  document.getElementById('importManualWrap').style.display = mode === 'manual' ? '' : 'none';
+  document.getElementById('btnJsonMode').classList.toggle('active', mode === 'json');
+  document.getElementById('btnManualMode').classList.toggle('active', mode === 'manual');
+}
+
+function doImportScore() {
+  if (!importTargetEntryId) return;
+  const entry = S.entries.find(e => e.id === importTargetEntryId);
+  if (!entry) return;
+  const dm = getDiff(entry.qDiff);
+
+  // Check which mode
+  const isManual = document.getElementById('importManualWrap').style.display !== 'none';
+  if (isManual) {
+    const score = parseInt(document.getElementById('importManualScore').value);
+    const note = document.getElementById('importManualNote').value.trim();
+    if (isNaN(score)) { toast('请输入分数', 'ri-error-warning-line'); return; }
+    entry.score = Math.min(score, dm.max);
+    entry.note = note || '手动评分';
+    entry.autoScore = false;
+  } else {
+    const jsonStr = document.getElementById('importJson').value.trim();
+    try {
+      const data = JSON.parse(jsonStr);
+      entry.score = Math.min(data.total_score || 0, dm.max);
+      entry.note = data.overall_comment || data.comment || '强模型评测';
+      entry.autoScore = false;
+      entry.llmDetail = data;
+    } catch (e) {
+      toast('JSON格式错误', 'ri-error-warning-line');
+      return;
+    }
+  }
+  save();
+  closeImportModal();
+  toast(`已更新 ${entry.blindId}: ${entry.score}分`);
+  renderSidebar();
+  render();
+}
+
+// Copy prompt + answer for strong model evaluation
+function copyForLLMJudge(entryId) {
+  const entry = S.entries.find(e => e.id === entryId);
+  if (!entry) return;
+  const prompt = `你是LLM Arena的评分员。请根据以下评分准则对模型回答打分。
+
+## 评分维度 (总分100)
+准确性 (30): 事实正确性 + 逻辑严密性
+完整性 (25): 覆盖度 + 深度
+表达质量 (25): 清晰度 + 结构性 + 语言质量
+创意与洞察 (20): 原创性 + 实用性
+
+## 题目
+${entry.prompt}
+
+## 模型回答
+${entry.answer}
+
+## 输出格式 (严格JSON)
+{"total_score": 85, "accuracy": {"score": 25, "max": 30, "comment": "..."}, "completeness": {"score": 20, "max": 25, "comment": "..."}, "expression": {"score": 22, "max": 25, "comment": "..."}, "insight": {"score": 18, "max": 20, "comment": "..."}, "highlights": ["亮点"], "improvements": ["改进"], "overall_comment": "总评"}`;
+
+  copyText(prompt);
+  toast('已复制评分Prompt，发给强模型后回来导入');
+}
+
 function toast(msg,icon='ri-check-line'){const t=document.getElementById('toast');t.querySelector('span').textContent=msg;t.querySelector('i').className=icon;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);}
 
 // Init
