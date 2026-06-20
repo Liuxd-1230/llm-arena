@@ -457,7 +457,8 @@ function renderCollectPanel(){
     <div class="card-body">
       <div class="label">题目Prompt</div>
       <div style="background:var(--s2);border:1px solid var(--bdr);border-radius:var(--r8);padding:14px;font-size:13px;line-height:1.7;color:var(--t2);margin-bottom:12px;">${q.prompt}</div>
-      <button class="btn btn-outline btn-sm" style="margin-bottom:16px;" onclick="copyText(S.q.prompt)"><i class="ri-file-copy-line"></i> 复制Prompt</button>
+      <button class="btn btn-outline btn-sm" style="margin-bottom:16px;" onclick="copyFullPrompt()"><i class="ri-file-copy-line"></i> 复制完整Prompt</button>
+      ${getLongDocForQuestion(q.name)?`<div style="font-size:11px;color:var(--am);margin-bottom:12px;">📄 此题含长文档(${typeof LONG_DOCS!=='undefined'&&LONG_DOCS[getLongDocForQuestion(q.name)]?LONG_DOCS[getLongDocForQuestion(q.name)].word_count:''}字)，复制Prompt时自动包含</div>`:''}
       <div class="label">模型名称</div>
       <input type="text" class="input" id="cModel" placeholder="如 GPT-4o / Claude-3.5 / Qwen-2.5" style="margin-bottom:12px;" list="modelList">
       <datalist id="modelList">${[...new Set(S.entries.map(e=>e.model))].map(m=>`<option value="${m}">`).join('')}</datalist>
@@ -531,6 +532,18 @@ function addEntry(){
 
 function deleteEntry(id){S.entries=S.entries.filter(e=>e.id!==id);save();renderSidebar();render();}
 function toggleEntryDetail(id){const el=document.getElementById('detail-'+id);if(el)el.style.display=el.style.display==='none'?'block':'none';}
+
+// Copy full prompt with long document if applicable
+function copyFullPrompt(){
+  if(!S.q)return;
+  let fullPrompt=S.q.prompt;
+  const docId=getLongDocForQuestion(S.q.name);
+  if(docId&&typeof LONG_DOCS!=='undefined'&&LONG_DOCS[docId]){
+    const doc=LONG_DOCS[docId];
+    fullPrompt=`${fullPrompt}\n\n---\n\n以下是要阅读的文档（${doc.title}，共${doc.word_count}字）：\n\n${doc.content}`;
+  }
+  copyText(fullPrompt);
+}
 
 // ===== Func Check =====
 function runFuncCheck(){
@@ -860,7 +873,20 @@ function copyForLLMJudgeNew() {
 }
 
 function buildJudgePrompt(questionPrompt, answer) {
-  const rubricSection = (typeof LONG_DOCS !== 'undefined' && getLongDocForQuestion) ? '' : '';
+  // Include long document if applicable
+  let fullPrompt = questionPrompt;
+  const docId = getLongDocForQuestion(questionPrompt.includes('段落') ? '信息提取' : questionPrompt.includes('微服务') ? '长文总结' : questionPrompt.includes('矛盾') ? '矛盾检测' : questionPrompt.includes('投资') ? '跨文档推理' : '');
+  // Try to find doc from question name
+  for (const [qName, dId] of Object.entries({"信息提取":"doc_python","长文总结":"doc_microservices","矛盾检测":"doc_ceo_jan","跨文档推理":"doc_investment"})) {
+    if (questionPrompt.includes(qName) || (typeof S !== 'undefined' && S.q && S.q.name === qName)) {
+      if (typeof LONG_DOCS !== 'undefined' && LONG_DOCS[dId]) {
+        const doc = LONG_DOCS[dId];
+        fullPrompt = `${fullPrompt}\n\n---\n\n参考文档（${doc.title}，${doc.word_count}字）：\n\n${doc.content}`;
+      }
+      break;
+    }
+  }
+
   return `你是LLM Arena的评分员。请根据以下评分准则对模型回答打分。
 
 ## 评分维度 (总分100)
@@ -870,7 +896,7 @@ function buildJudgePrompt(questionPrompt, answer) {
 创意与洞察 (20): 原创性 + 实用性
 
 ## 题目
-${questionPrompt}
+${fullPrompt}
 
 ## 模型回答
 ${answer}
