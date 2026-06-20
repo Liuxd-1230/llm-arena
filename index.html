@@ -445,7 +445,7 @@ function selectQ(dim,diff,name){S.q=QS.find(q=>q.dim===dim&&q.diff===diff&&q.nam
 function renderCollectPanel(){
   const q=S.q;const dim=getDim(q.dim);const dm=getDiff(q.diff);const existing=S.entries.filter(e=>e.qName===q.name);
   return`<div class="card" id="collectPanel" style="margin-top:20px;">
-    <div class="card-header"><div style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;"><i class="${dim.icon}" style="color:${dim.color};font-size:16px;"></i> 收集答案 ${dim.autoScore?'<span style="color:var(--gn);font-size:11px;">⚡提交即评分</span>':''}</div><span style="font-size:11px;color:var(--t4);">${q.name} · ${dm.emoji} · 上限${dm.max}</span></div>
+    <div class="card-header"><div style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;"><i class="${dim.icon}" style="color:${dim.color};font-size:16px;"></i> 收集答案</div><span style="font-size:11px;color:var(--t4);">${q.name} · ${dm.emoji} · 上限${dm.max}</span></div>
     <div class="card-body">
       <div class="label">题目Prompt</div>
       <div style="background:var(--s2);border:1px solid var(--bdr);border-radius:var(--r8);padding:14px;font-size:13px;line-height:1.7;color:var(--t2);margin-bottom:12px;">${q.prompt}</div>
@@ -456,15 +456,31 @@ function renderCollectPanel(){
       <div class="label">粘贴模型回答</div>
       <textarea class="textarea" id="cAnswer" placeholder="粘贴模型回答..." style="margin-bottom:12px;"></textarea>
       <div style="display:flex;gap:8px;margin-bottom:16px;">
-        <button class="btn btn-primary" onclick="addEntry()"><i class="ri-add-line"></i> ${dim.autoScore?'提交并评分':'添加到待测'}</button>
+        <button class="btn btn-primary" onclick="addEntry()"><i class="ri-add-line"></i> 提交${dim.autoScore?'（⚡自动评分）':''}</button>
         ${dim.isCode?`<button class="btn btn-outline" onclick="runFuncCheck()"><i class="ri-checkbox-circle-line"></i> 功能检测</button>`:''}
       </div>
-      ${existing.length>0?`<div class="label" style="margin-top:16px;">已收集 (${existing.length})</div><div class="entry-list">${existing.map(e=>`
-        <div class="entry-item"><span class="entry-blind-id">${e.blindId}</span>
-          <span style="font-size:13px;">${e.model}</span><span style="font-size:12px;color:var(--t3);">${e.qName}</span>
-          <span class="entry-status ${e.score!==null&&e.score!==undefined?'scored':'pending'}">${e.score!==null&&e.score!==undefined?(e.score+'分'+(e.autoScore?'⚡':'')):'待评分'}</span>
-          <button class="btn btn-ghost btn-xs" onclick="deleteEntry(${e.id})"><i class="ri-delete-bin-line"></i></button></div>`).join('')}</div>`:''}
-      ${S.entries.filter(e=>e.score===null||e.score===undefined).length>0&&!dim.autoScore?`<div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--bdr);"><button class="btn btn-primary" onclick="startBlind()" style="width:100%;justify-content:center;"><i class="ri-play-line"></i> 开始全屏盲测 (${S.entries.filter(e=>e.score===null||e.score===undefined).length}个)</button></div>`:''}
+      ${existing.length>0?`
+      <div class="label" style="margin-top:16px;">已收集 (${existing.length})</div>
+      <div style="font-size:11px;color:var(--t4);margin-bottom:8px;">⚡自动评分 | 🤖强模型评测 | 每条记录支持双轨评分</div>
+      <div class="entry-list">${existing.map(e=>{
+        const hasAuto=e.autoScore||e.autoDetail;
+        const hasLLM=e.llmDetail||e.note==='强模型评测';
+        const scoreDisplay=[];
+        if(hasAuto) scoreDisplay.push(`<span style="color:var(--gn);">⚡${e.score}分</span>`);
+        if(hasLLM) scoreDisplay.push(`<span style="color:var(--ac);">🤖${e.llmScore||e.score}分</span>`);
+        if(!hasAuto&&!hasLLM&&e.score!==null&&e.score!==undefined) scoreDisplay.push(`<span>${e.score}分</span>`);
+        if(e.score===null||e.score===undefined) scoreDisplay.push(`<span style="color:var(--t4);">待评分</span>`);
+        return`
+        <div class="entry-item" style="flex-wrap:wrap;gap:8px;">
+          <span class="entry-blind-id">${e.blindId}</span>
+          <span style="font-size:13px;font-weight:500;">${e.model}</span>
+          <span style="font-size:12px;color:var(--t3);">${e.qName}</span>
+          <span style="margin-left:auto;font-size:12px;">${scoreDisplay.join(' ')}</span>
+          <button class="btn btn-ghost btn-xs" onclick="copyForLLMJudge(${e.id})" title="复制Prompt给强模型"><i class="ri-robot-line"></i></button>
+          <button class="btn btn-ghost btn-xs" onclick="openImportModal(${e.id})" title="导入强模型评分"><i class="ri-braces-line"></i></button>
+          <button class="btn btn-ghost btn-xs" onclick="deleteEntry(${e.id})" title="删除"><i class="ri-delete-bin-line"></i></button>
+        </div>`;}).join('')}</div>`:''}
+      ${S.entries.filter(e=>e.score===null||e.score===undefined).length>0&&!dim.autoScore?`<div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--bdr);"><button class="btn btn-primary" onclick="startBlind()" style="width:100%;justify-content:center;"><i class="ri-play-line"></i> 全屏盲测 (${S.entries.filter(e=>e.score===null||e.score===undefined).length}个待测)</button></div>`:''}
     </div>
   </div>`;
 }
@@ -741,31 +757,39 @@ function doImportScore() {
   if (!entry) return;
   const dm = getDiff(entry.qDiff);
 
-  // Check which mode
   const isManual = document.getElementById('importManualWrap').style.display !== 'none';
   if (isManual) {
     const score = parseInt(document.getElementById('importManualScore').value);
     const note = document.getElementById('importManualNote').value.trim();
     if (isNaN(score)) { toast('请输入分数', 'ri-error-warning-line'); return; }
-    entry.score = Math.min(score, dm.max);
-    entry.note = note || '手动评分';
-    entry.autoScore = false;
+    entry.llmScore = Math.min(score, dm.max);
+    entry.llmNote = note || '手动评分';
+    entry.llmDetail = null;
+    // If no auto-score, also set as main score
+    if (!entry.autoScore) { entry.score = entry.llmScore; entry.note = entry.llmNote; }
+    else { entry.note = '双轨评分'; }
   } else {
     const jsonStr = document.getElementById('importJson').value.trim();
     try {
       const data = JSON.parse(jsonStr);
-      entry.score = Math.min(data.total_score || 0, dm.max);
-      entry.note = data.overall_comment || data.comment || '强模型评测';
-      entry.autoScore = false;
+      entry.llmScore = Math.min(data.total_score || 0, dm.max);
+      entry.llmNote = data.overall_comment || data.comment || '强模型评测';
       entry.llmDetail = data;
+      if (!entry.autoScore) { entry.score = entry.llmScore; entry.note = entry.llmNote; }
+      else { entry.note = '双轨评分'; }
     } catch (e) {
       toast('JSON格式错误', 'ri-error-warning-line');
       return;
     }
   }
+  // Ensure main score is set
+  if (entry.score === null || entry.score === undefined) {
+    entry.score = entry.llmScore;
+  }
   save();
   closeImportModal();
-  toast(`已更新 ${entry.blindId}: ${entry.score}分`);
+  const track = entry.autoScore ? `⚡${entry.score}+🤖${entry.llmScore}` : `🤖${entry.llmScore}`;
+  toast(`已更新 ${entry.blindId}: ${track}`);
   renderSidebar();
   render();
 }
