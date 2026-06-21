@@ -198,3 +198,35 @@ export function doReveal() {
   toast('已揭盲');
   render();
 }
+
+// Classical animation helpers
+export function animateElements(selector, animationClass = 'animate-fade-in-up', stagger = true) {
+  const elements = document.querySelectorAll(selector);
+  elements.forEach((el, index) => {
+    el.style.opacity = '0';
+    el.style.transform = 'translateY(16px)';
+    
+    setTimeout(() => {
+      el.classList.add(animationClass);
+      if (stagger) {
+        el.classList.add(`stagger-${Math.min(index + 1, 5)}`);
+      }
+      el.style.opacity = '';
+      el.style.transform = '';
+    }, 50);
+  });
+}
+
+export function animateCards() {
+  animateElements('.q-card, .entry-item, .dim-item, .card');
+}
+
+export function animateModal(modalId) {
+  const modal = document.getElementById(modalId);
+  if (modal) {
+    const box = modal.querySelector('.modal-box');
+    if (box) {
+      box.classList.add('animate-scale-in');
+    }
+  }
+}

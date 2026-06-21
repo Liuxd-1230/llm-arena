@@ -12,6 +12,7 @@
 <link rel="stylesheet" href="css/views.css">
 <link rel="stylesheet" href="css/blind.css">
 <link rel="stylesheet" href="css/themes.css">
+<link rel="stylesheet" href="css/ornaments.css">
 </head>
 <body>
 
@@ -21,12 +22,12 @@
   <i class="ri-sun-line icon-sun icon"></i>
 </button>
 
-<nav class="nav">
+<nav class="nav nav-classical">
   <div class="shell nav-inner">
     <div class="nav-brand">
       <div class="nav-icon"><i class="ri-flask-line"></i></div>
       <span>LLM Arena</span>
-      <span style="font-size:11px;color:var(--t4);font-weight:400;">v3.0</span>
+      <span class="classical-badge">v3.0</span>
     </div>
     <div style="display:flex;align-items:center;gap:8px">
       <button class="btn-icon nav-hamburger" style="display:none" onclick="toggleSidebar()"><i class="ri-menu-line"></i></button>
@@ -38,7 +39,7 @@
 
 <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
 <div class="main-grid">
-  <aside class="sidebar" id="sidebar"></aside>
+  <aside class="sidebar sidebar-classical" id="sidebar"></aside>
   <main class="content" id="main"></main>
 </div>
 
@@ -113,7 +114,7 @@
 
 <!-- Reveal Modal -->
 <div class="modal-bg" id="revealModal">
-  <div class="modal-box">
+  <div class="modal-box modal-classical">
     <h3><i class="ri-eye-line"></i> 揭盲确认</h3>
     <p>揭盲后将显示所有模型的真实名称。确认？</p>
     <div id="revealMapping" style="font-family:var(--mono);font-size:12px;line-height:2;color:var(--t2);margin-bottom:16px;"></div>
@@ -126,7 +127,7 @@
 
 <!-- Import Score Modal -->
 <div class="modal-bg" id="importModal">
-  <div class="modal-box" style="max-width:700px;">
+  <div class="modal-box modal-classical" style="max-width:700px;">
     <h3><i class="ri-braces-line"></i> 强模型评测 - 导入评分</h3>
     <p>将强模型返回的JSON评分结果粘贴到下方，或手动输入分数。</p>
     <div id="importTarget" style="font-size:13px;color:var(--t2);margin-bottom:12px;padding:8px 12px;background:var(--s2);border-radius:var(--r8);"></div>
@@ -154,7 +155,7 @@
 
 <!-- Func Check Modal -->
 <div class="modal-bg" id="funcModal">
-  <div class="modal-box" style="max-width:700px;">
+  <div class="modal-box modal-classical" style="max-width:700px;">
     <h3><i class="ri-checkbox-circle-line"></i> 功能检测结果</h3>
     <div id="funcResults"></div>
     <div id="funcSummary" style="margin-top:12px;padding-top:12px;border-top:1px solid var(--bdr);font-size:13px;"></div>
@@ -164,7 +165,7 @@
   </div>
 </div>
 
-<div class="toast" id="toast"><i class="ri-check-line" style="color:var(--gn);"></i><span id="toastMsg"></span></div>
+<div class="toast toast-classical" id="toast"><i class="ri-check-line" style="color:var(--gn);"></i><span id="toastMsg"></span></div>
 
 <!-- Data modules (non-module scripts, define globals) -->
 <script src="data/autoscore.js"></script>

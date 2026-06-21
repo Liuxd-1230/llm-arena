@@ -32,7 +32,8 @@ import {
   runFuncCheck, exportAll, closeFuncModal,
   showRevealModal, closeRevealModal, doReveal,
   escHtml, escSrcdoc, shuffle, getDim, getDiff, isAutoDim, hasAutoQ, getLongDocForQuestion,
-  buildJudgePrompt
+  buildJudgePrompt,
+  animateElements, animateCards, animateModal
 } from './utils.js';
 
 // ============================================================
@@ -94,6 +95,11 @@ window.showRevealModal = showRevealModal;
 window.closeRevealModal = closeRevealModal;
 window.doReveal = doReveal;
 window.buildJudgePrompt = buildJudgePrompt;
+
+// Animation functions
+window.animateElements = animateElements;
+window.animateCards = animateCards;
+window.animateModal = animateModal;
 
 // ============================================================
 // Initialize

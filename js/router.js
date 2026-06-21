@@ -12,6 +12,7 @@ import { renderEntries } from './views/entries.js';
 import { renderCompare } from './views/compare.js';
 import { renderRadar } from './views/radar.js';
 import { renderPromptView } from './views/prompt.js';
+import { animateCards } from './utils.js';
 
 export function showView(v) {
   S.view = v;
@@ -49,4 +50,7 @@ export function render(el) {
   else if (S.view === 'compare') renderCompare(el);
   else if (S.view === 'radar') renderRadar(el);
   else if (S.view === 'prompt') renderPromptView(el);
+  
+  // Add classical animations to rendered elements
+  setTimeout(() => animateCards(), 100);
 }
