@@ -199,33 +199,29 @@ export function doReveal() {
   render();
 }
 
-// Premium animation helpers
+// Subtle animation helpers
 export function animateElements(selector, animationClass = 'entrance-fade-up', stagger = true) {
   const elements = document.querySelectorAll(selector);
   elements.forEach((el, index) => {
-    // Set initial state
+    // Set initial state - just opacity
     el.style.opacity = '0';
-    el.style.transform = 'translateY(24px)';
-    el.style.filter = 'blur(4px)';
     
     // Animate in with stagger
     setTimeout(() => {
       el.classList.add(animationClass);
       if (stagger) {
-        el.classList.add(`stagger-${Math.min(index + 1, 8)}`);
+        el.classList.add(`stagger-${Math.min(index + 1, 6)}`);
       }
       // Clear inline styles after animation starts
       setTimeout(() => {
         el.style.opacity = '';
-        el.style.transform = '';
-        el.style.filter = '';
       }, 50);
-    }, 50);
+    }, 30);
   });
 }
 
 export function animateCards() {
-  animateElements('.q-card, .entry-item, .dim-item, .card, .card-premium');
+  animateElements('.q-card, .entry-item, .dim-item, .card');
 }
 
 export function animateModal(modalId) {
@@ -233,25 +229,25 @@ export function animateModal(modalId) {
   if (modal) {
     const box = modal.querySelector('.modal-box');
     if (box) {
-      box.classList.add('modal-premium');
+      box.classList.add('modal-subtle');
     }
   }
 }
 
-// Add premium hover effects to elements
+// Add subtle hover effects to elements
 export function addPremiumEffects() {
-  // Add hover-lift to cards
+  // Add card hover effect
   document.querySelectorAll('.q-card, .entry-item, .dim-item').forEach(el => {
-    el.classList.add('hover-lift', 'click-shrink');
+    el.classList.add('card-hover');
   });
   
-  // Add premium effects to buttons
+  // Add subtle button effects
   document.querySelectorAll('.btn-primary, .btn-outline').forEach(el => {
-    el.classList.add('btn-premium');
+    el.classList.add('btn-subtle');
   });
   
-  // Add premium effects to inputs
+  // Add subtle input effects
   document.querySelectorAll('.input, .textarea').forEach(el => {
-    el.classList.add('input-premium');
+    el.classList.add('input-subtle');
   });
 }

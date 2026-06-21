@@ -447,365 +447,95 @@
   border: 1px solid rgba(93, 168, 154, 0.3);
 }
 
-/* === 高级动画系统 (Premium Animation System) === */
+/* === 克制动效系统 (Restrained Motion System) === */
 
-/* 物理弹簧曲线 - 模拟真实世界运动 */
+/* 平滑曲线 - 不要弹簧，不要弹跳 */
 :root {
-  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
   --ease-smooth: cubic-bezier(0.25, 0.1, 0.25, 1);
-  --ease-bounce: cubic-bezier(0.68, -0.55, 0.265, 1.55);
-  --ease-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-/* 淡入上升 - 带模糊效果 */
+/* 淡入上升 - 纯粹，无模糊无缩放 */
 @keyframes fadeInUp {
   from {
     opacity: 0;
-    transform: translateY(24px) scale(0.98);
-    filter: blur(4px);
+    transform: translateY(12px);
   }
   to {
     opacity: 1;
-    transform: translateY(0) scale(1);
-    filter: blur(0);
-  }
-}
-
-/* 淡入 - 带轻微缩放 */
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: scale(0.98);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
-}
-
-/* 从左滑入 - 带弹性 */
-@keyframes slideInLeft {
-  from {
-    opacity: 0;
-    transform: translateX(-24px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
-}
-
-/* 从右滑入 */
-@keyframes slideInRight {
-  from {
-    opacity: 0;
-    transform: translateX(24px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
-}
-
-/* 缩放弹入 - 带弹性效果 */
-@keyframes scaleIn {
-  from {
-    opacity: 0;
-    transform: scale(0.9);
-  }
-  50% {
-    transform: scale(1.02);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
-}
-
-/* 旋转弹入 */
-@keyframes rotateIn {
-  from {
-    opacity: 0;
-    transform: rotate(-5deg) scale(0.95);
-  }
-  to {
-    opacity: 1;
-    transform: rotate(0) scale(1);
-  }
-}
-
-/* 闪光效果 */
-@keyframes shimmer {
-  0% {
-    background-position: -200% 0;
-  }
-  100% {
-    background-position: 200% 0;
-  }
-}
-
-/* 脉冲发光 */
-@keyframes pulseGlow {
-  0%, 100% {
-    box-shadow: 0 0 0 0 var(--accent-light);
-  }
-  50% {
-    box-shadow: 0 0 20px 4px var(--accent-light);
-  }
-}
-
-/* 浮动效果 */
-@keyframes float {
-  0%, 100% {
     transform: translateY(0);
   }
-  50% {
-    transform: translateY(-6px);
-  }
 }
 
-/* 边框发光 */
-@keyframes borderGlow {
-  0%, 100% {
-    border-color: var(--border);
-  }
-  50% {
-    border-color: var(--accent);
-  }
+/* 淡入 */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
-/* 动画类 - 使用高级曲线 */
+/* 动画类 - 克制 */
 .animate-fade-in-up {
-  animation: fadeInUp 0.7s var(--ease-expo) forwards;
+  animation: fadeInUp 0.4s var(--ease-out) forwards;
 }
 
 .animate-fade-in {
-  animation: fadeIn 0.5s var(--ease-smooth) forwards;
+  animation: fadeIn 0.3s ease forwards;
 }
 
-.animate-slide-in-left {
-  animation: slideInLeft 0.6s var(--ease-expo) forwards;
-}
+/* 交错延迟 - 更紧凑 */
+.stagger-1 { animation-delay: 0.03s; }
+.stagger-2 { animation-delay: 0.06s; }
+.stagger-3 { animation-delay: 0.09s; }
+.stagger-4 { animation-delay: 0.12s; }
+.stagger-5 { animation-delay: 0.15s; }
+.stagger-6 { animation-delay: 0.18s; }
 
-.animate-slide-in-right {
-  animation: slideInRight 0.6s var(--ease-expo) forwards;
-}
-
-.animate-scale-in {
-  animation: scaleIn 0.5s var(--ease-spring) forwards;
-}
-
-.animate-rotate-in {
-  animation: rotateIn 0.6s var(--ease-spring) forwards;
-}
-
-.animate-shimmer {
-  background: linear-gradient(
-    90deg,
-    transparent 0%,
-    rgba(255, 255, 255, 0.1) 50%,
-    transparent 100%
-  );
-  background-size: 200% 100%;
-  animation: shimmer 2s infinite;
-}
-
-.animate-pulse-glow {
-  animation: pulseGlow 2s infinite;
-}
-
-.animate-float {
-  animation: float 3s ease-in-out infinite;
-}
-
-.animate-border-glow {
-  animation: borderGlow 2s infinite;
-}
-
-/* === 交错动画延迟 (Stagger Animation Delay) === */
-.stagger-1 { animation-delay: 0.05s; }
-.stagger-2 { animation-delay: 0.1s; }
-.stagger-3 { animation-delay: 0.15s; }
-.stagger-4 { animation-delay: 0.2s; }
-.stagger-5 { animation-delay: 0.25s; }
-.stagger-6 { animation-delay: 0.3s; }
-.stagger-7 { animation-delay: 0.35s; }
-.stagger-8 { animation-delay: 0.4s; }
-
-/* === 悬停增强效果 (Enhanced Hover Effects) === */
-.hover-lift {
-  transition: all 0.3s var(--ease-spring);
-}
-
-.hover-lift:hover {
-  transform: translateY(-4px);
-  box-shadow: var(--shadow-lg);
-}
-
-.hover-glow {
-  transition: all 0.3s var(--ease-smooth);
-}
-
-.hover-glow:hover {
-  box-shadow: 0 0 20px var(--accent-light);
-}
-
-.hover-scale {
-  transition: all 0.2s var(--ease-spring);
-}
-
-.hover-scale:hover {
-  transform: scale(1.02);
-}
-
-.hover-rotate {
-  transition: all 0.3s var(--ease-spring);
-}
-
-.hover-rotate:hover {
-  transform: rotate(2deg);
-}
-
-/* === 点击反馈 (Click Feedback) === */
-.click-shrink:active {
-  transform: scale(0.98);
-  transition: transform 0.1s ease;
-}
-
-.click-bounce:active {
-  animation: scaleIn 0.3s var(--ease-bounce);
-}
-
-/* === 入场动画组合 (Entrance Animation Combinations) === */
+/* 入场类 */
 .entrance-fade-up {
   opacity: 0;
-  transform: translateY(24px);
-  animation: fadeInUp 0.7s var(--ease-expo) forwards;
+  transform: translateY(12px);
+  animation: fadeInUp 0.4s var(--ease-out) forwards;
 }
 
-.entrance-scale {
-  opacity: 0;
-  transform: scale(0.9);
-  animation: scaleIn 0.5s var(--ease-spring) forwards;
+/* 卡片悬停 - 只有边框变色，不要浮动 */
+.card-hover {
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
-.entrance-slide-left {
-  opacity: 0;
-  transform: translateX(-24px);
-  animation: slideInLeft 0.6s var(--ease-expo) forwards;
-}
-
-.entrance-slide-right {
-  opacity: 0;
-  transform: translateX(24px);
-  animation: slideInRight 0.6s var(--ease-expo) forwards;
-}
-
-/* === 特殊效果组合 (Special Effect Combinations) === */
-.card-premium {
-  transition: all 0.4s var(--ease-spring);
-  position: relative;
-  overflow: hidden;
-}
-
-.card-premium::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    rgba(255, 255, 255, 0.05),
-    transparent
-  );
-  transition: left 0.6s ease;
-}
-
-.card-premium:hover {
-  transform: translateY(-4px) scale(1.01);
-  box-shadow: var(--shadow-xl);
-}
-
-.card-premium:hover::before {
-  left: 100%;
-}
-
-/* 按钮高级效果 */
-.btn-premium {
-  position: relative;
-  overflow: hidden;
-  transition: all 0.3s var(--ease-spring);
-}
-
-.btn-premium::after {
-  content: '';
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 0;
-  height: 0;
-  background: rgba(255, 255, 255, 0.2);
-  border-radius: 50%;
-  transform: translate(-50%, -50%);
-  transition: width 0.6s ease, height 0.6s ease;
-}
-
-.btn-premium:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-md);
-}
-
-.btn-premium:hover::after {
-  width: 300px;
-  height: 300px;
-}
-
-.btn-premium:active {
-  transform: translateY(0) scale(0.98);
-}
-
-/* 输入框高级效果 */
-.input-premium {
-  transition: all 0.3s var(--ease-smooth);
-  position: relative;
-}
-
-.input-premium:focus {
+.card-hover:hover {
   border-color: var(--accent);
-  box-shadow: 
-    0 0 0 3px var(--accent-light),
-    0 4px 12px rgba(0, 0, 0, 0.1);
-  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
 }
 
-/* 模态框高级效果 */
-.modal-premium {
-  animation: scaleIn 0.4s var(--ease-spring) forwards;
+/* 按钮悬停 - 微妙的背景变化 */
+.btn-subtle {
+  transition: background-color 0.15s ease, border-color 0.15s ease;
 }
 
-.modal-premium .modal-box {
-  position: relative;
-  overflow: hidden;
+.btn-subtle:hover {
+  filter: brightness(1.08);
 }
 
-.modal-premium .modal-box::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 3px;
-  background: linear-gradient(
-    90deg,
-    var(--accent),
-    var(--accent-hover),
-    var(--accent)
-  );
-  background-size: 200% 100%;
-  animation: shimmer 3s infinite;
+.btn-subtle:active {
+  filter: brightness(0.95);
+}
+
+/* 输入框聚焦 - 只有边框 */
+.input-subtle {
+  transition: border-color 0.2s ease;
+}
+
+.input-subtle:focus {
+  border-color: var(--accent);
+}
+
+/* 模态框 - 简单淡入 */
+.modal-subtle {
+  animation: fadeIn 0.2s ease forwards;
+}
+
+.modal-subtle .modal-box {
+  animation: fadeInUp 0.25s var(--ease-out) forwards;
 }
 
 /* === 古典滚动条 (Classical Scrollbar) === */
