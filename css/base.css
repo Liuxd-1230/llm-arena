@@ -6,6 +6,69 @@
 
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 html{scroll-behavior:smooth;-webkit-font-smoothing:antialiased}
-body{font-family:var(--sans);background:var(--s0);color:var(--t1);line-height:1.5;min-height:100dvh}
-::selection{background:var(--ac);color:#fff}
-::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--s4);border-radius:2px}
+body{
+  font-family:var(--sans);
+  background:var(--bg-primary);
+  color:var(--text-primary);
+  line-height:1.5;
+  min-height:100dvh;
+  position:relative;
+}
+
+/* 大理石纹理叠加 */
+body::before{
+  content:'';
+  position:fixed;
+  top:0;left:0;right:0;bottom:0;
+  background:var(--texture-marble);
+  pointer-events:none;
+  z-index:0;
+}
+
+/* 噪点纹理叠加 */
+body::after{
+  content:'';
+  position:fixed;
+  top:0;left:0;right:0;bottom:0;
+  background:var(--texture-noise);
+  background-size:256px 256px;
+  pointer-events:none;
+  z-index:0;
+  opacity:0.5;
+}
+
+/* 确保内容在纹理之上 */
+body > *{
+  position:relative;
+  z-index:1;
+}
+
+::selection{background:var(--accent);color:#fff}
+
+/* 滚动条 */
+::-webkit-scrollbar{width:6px}
+::-webkit-scrollbar-track{background:var(--scrollbar-track)}
+::-webkit-scrollbar-thumb{background:var(--scrollbar-thumb);border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:var(--scrollbar-thumb-hover)}
+
+/* 通用链接样式 */
+a{color:var(--accent);text-decoration:none;transition:color 0.15s}
+a:hover{color:var(--accent-hover)}
+
+/* 通用代码样式 */
+code{
+  font-family:var(--mono);
+  background:var(--code-bg);
+  color:var(--code-text);
+  padding:2px 6px;
+  border-radius:var(--r6);
+  font-size:0.9em;
+}
+
+/* 古典装饰分割线 */
+.ornament-divider{
+  height:1px;
+  background:linear-gradient(90deg,transparent,var(--accent) 20%,var(--accent) 80%,transparent);
+  opacity:0.2;
+  margin:24px 0;
+}
