@@ -30,7 +30,7 @@ export function renderThumbGrid() {
   grid.innerHTML = thumbQueue.map((item, idx) => {
     const dm = getDiff(item.qDiff);
     const scored = item.score !== null && item.score !== undefined;
-    return `<div class="thumb-card ${scored ? 'thumb-card-scored' : ''}" ${scored ? `data-score="${item.score}分"` : ''} onclick="event.stopPropagation();openPreview(${idx})">
+    return `<div class="thumb-card ${scored ? 'thumb-card-scored' : ''}" ${scored ? `data-score="${item.score}分"` : ''} onclick="event.stopPropagation();openPreview(${idx})" style="cursor:pointer;">
       <div class="thumb-frame-wrap"><iframe sandbox="" srcdoc="${escSrcdoc(item.answer)}" loading="lazy"></iframe></div>
       <div class="thumb-card-info">
         <span class="thumb-card-id">${item.blindId}</span>
@@ -72,13 +72,30 @@ export function openPreview(idx) {
   
   // Generate rubric content dynamically
   const rubric = document.getElementById('previewRubric');
+  const scored = item.score !== null && item.score !== undefined;
+  const breakdown = item.autoDetail?.breakdown || {};
+  
   rubric.innerHTML = `
     <h4><i class="ri-bar-chart-2-line"></i> 评分面板</h4>
+    ${scored ? `
+      <div style="background:var(--accent-light);border:1px solid var(--accent);border-radius:var(--r8);padding:12px;margin-bottom:16px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+          <span style="font-size:13px;font-weight:600;color:var(--accent);">已评分</span>
+          <span style="font-size:24px;font-weight:700;color:var(--accent);">${item.score}</span>
+        </div>
+        ${breakdown.visual !== undefined ? `
+          <div style="font-size:12px;color:var(--text-secondary);line-height:1.8;">
+            视觉: ${breakdown.visual}/25 · 交互: ${breakdown.interaction}/25 · 代码: ${breakdown.code_quality}/25 · 创意: ${breakdown.creative}/25
+          </div>
+        ` : ''}
+        ${item.note ? `<div style="font-size:12px;color:var(--text-tertiary);margin-top:4px;">备注: ${item.note}</div>` : ''}
+      </div>
+    ` : ''}
     <div class="preview-rubric-item">
       <div class="preview-rubric-label">视觉设计</div>
       <div class="preview-rubric-desc">布局、配色、视觉层次</div>
       <div class="preview-score-row">
-        <input type="number" class="preview-score-input" id="scoreVisual" min="0" max="25" placeholder="0">
+        <input type="number" class="preview-score-input" id="scoreVisual" min="0" max="25" placeholder="0" value="${breakdown.visual || ''}">
         <span style="color:var(--t4);font-size:12px">/ 25</span>
       </div>
     </div>
@@ -86,7 +103,7 @@ export function openPreview(idx) {
       <div class="preview-rubric-label">交互体验</div>
       <div class="preview-rubric-desc">可用性、响应性、动效</div>
       <div class="preview-score-row">
-        <input type="number" class="preview-score-input" id="scoreInteract" min="0" max="25" placeholder="0">
+        <input type="number" class="preview-score-input" id="scoreInteract" min="0" max="25" placeholder="0" value="${breakdown.interaction || ''}">
         <span style="color:var(--t4);font-size:12px">/ 25</span>
       </div>
     </div>
@@ -94,7 +111,7 @@ export function openPreview(idx) {
       <div class="preview-rubric-label">代码质量</div>
       <div class="preview-rubric-desc">结构、语义、可维护性</div>
       <div class="preview-score-row">
-        <input type="number" class="preview-score-input" id="scoreCode" min="0" max="25" placeholder="0">
+        <input type="number" class="preview-score-input" id="scoreCode" min="0" max="25" placeholder="0" value="${breakdown.code_quality || ''}">
         <span style="color:var(--t4);font-size:12px">/ 25</span>
       </div>
     </div>
@@ -102,19 +119,20 @@ export function openPreview(idx) {
       <div class="preview-rubric-label">创意完成度</div>
       <div class="preview-rubric-desc">创意性、完整性、独特性</div>
       <div class="preview-score-row">
-        <input type="number" class="preview-score-input" id="scoreCreative" min="0" max="25" placeholder="0">
+        <input type="number" class="preview-score-input" id="scoreCreative" min="0" max="25" placeholder="0" value="${breakdown.creative || ''}">
         <span style="color:var(--t4);font-size:12px">/ 25</span>
       </div>
     </div>
     <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border);">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
         <span style="font-size:13px;font-weight:600;">总分</span>
-        <span class="preview-total" id="previewTotal">0</span>
+        <span class="preview-total" id="previewTotal">${item.score || 0}</span>
       </div>
-      <input type="text" class="preview-note" id="previewNote" placeholder="评分备注（可选）">
+      <input type="text" class="preview-note" id="previewNote" placeholder="评分备注（可选）" value="${item.note || ''}">
       <div class="preview-actions">
-        <button class="btn btn-primary" onclick="submitPreviewScore()"><i class="ri-check-line"></i> 提交</button>
-        <button class="btn btn-outline" onclick="previewNext()"><i class="ri-skip-forward-line"></i> 跳过</button>
+        <button class="btn btn-ghost" onclick="previewPrev()"><i class="ri-arrow-left-line"></i> 上一个</button>
+        <button class="btn btn-primary" onclick="submitPreviewScore()"><i class="ri-check-line"></i> ${scored ? '更新' : '提交'}</button>
+        <button class="btn btn-ghost" onclick="previewNext()">下一个 <i class="ri-arrow-right-line"></i></button>
       </div>
     </div>
   `;
@@ -172,6 +190,14 @@ export function submitPreviewScore() {
   renderThumbGrid();
   toast(`已评分 ${item.blindId}: ${total}分`);
   previewNext();
+}
+
+export function previewPrev() {
+  if (thumbIdx > 0) {
+    openPreview(thumbIdx - 1);
+  } else {
+    toast('已经是第一题', 'ri-error-warning-line');
+  }
 }
 
 export function previewNext() {

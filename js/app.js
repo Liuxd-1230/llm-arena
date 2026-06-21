@@ -22,7 +22,7 @@ import { renderPromptView } from './views/prompt.js';
 
 // Components
 import { startBlind, showBlindItem, toggleCode, submitBlindScore, skipBlind, exitBlind } from './components/blind.js';
-import { startThumbView, renderThumbGrid, exitThumbView, openPreview, calcPreviewTotal, togglePreviewCode, submitPreviewScore, previewNext, closePreview } from './components/thumb.js';
+import { startThumbView, renderThumbGrid, exitThumbView, openPreview, calcPreviewTotal, togglePreviewCode, submitPreviewScore, previewPrev, previewNext, closePreview } from './components/thumb.js';
 import { openImportModal, closeImportModal, setImportMode, doImportScore } from './components/import-modal.js';
 import { toast } from './components/toast.js';
 
@@ -74,6 +74,7 @@ window.openPreview = openPreview;
 window.calcPreviewTotal = calcPreviewTotal;
 window.togglePreviewCode = togglePreviewCode;
 window.submitPreviewScore = submitPreviewScore;
+window.previewPrev = previewPrev;
 window.previewNext = previewNext;
 window.closePreview = closePreview;
 
