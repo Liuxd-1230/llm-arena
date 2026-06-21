@@ -92,7 +92,7 @@ export function copyFullPrompt() {
 export function copyForLLMJudge(entryId) {
   const entry = S.entries.find(e => e.id === entryId);
   if (!entry) return;
-  const judgePrompt = buildJudgePrompt(entry.prompt, entry.answer);
+  const judgePrompt = buildJudgePrompt(entry.prompt, entry.answer, entry.qName);
   copyText(judgePrompt);
   toast('已复制评分Prompt，发给强模型后回来导入');
 }
@@ -102,20 +102,21 @@ export function copyForLLMJudgeNew() {
   const answer = document.getElementById('cAnswer')?.value?.trim();
   if (!prompt) { toast('请先选择题目', 'ri-error-warning-line'); return; }
   if (!answer) { toast('请先粘贴模型回答', 'ri-error-warning-line'); return; }
-  const judgePrompt = buildJudgePrompt(prompt, answer);
+  const judgePrompt = buildJudgePrompt(prompt, answer, S.q?.name);
   copyText(judgePrompt);
   toast('已复制评分Prompt，发给强模型后回来导入');
 }
 
-export function buildJudgePrompt(questionPrompt, answer) {
+export function buildJudgePrompt(questionPrompt, answer, qName) {
   let fullPrompt = questionPrompt;
-  for (const [qName, dId] of Object.entries({
+  const nameToMatch = qName || (typeof S !== 'undefined' && S.q && S.q.name) || '';
+  for (const [docQName, dId] of Object.entries({
     "信息提取": "doc_python",
     "长文总结": "doc_microservices",
     "矛盾检测": "doc_ceo_jan",
     "跨文档综合投资建议": "doc_investment"
   })) {
-    if (questionPrompt.includes(qName) || (typeof S !== 'undefined' && S.q && S.q.name === qName)) {
+    if (nameToMatch === docQName || questionPrompt.includes(docQName)) {
       if (typeof LONG_DOCS !== 'undefined' && LONG_DOCS[dId]) {
         const doc = LONG_DOCS[dId];
         fullPrompt = `${fullPrompt}\n\n---\n\n参考文档（${doc.title}，${doc.word_count}字）：\n\n${doc.content}`;

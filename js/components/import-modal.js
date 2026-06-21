@@ -72,7 +72,7 @@ export function doImportScore() {
         comment = data.comment || data.note || '';
       } else if (data.total !== undefined) {
         score = data.total;
-        comment = data.feedback || data评价 || '';
+        comment = data.feedback || data.comment || '';
       } else if (typeof data === 'number') {
         score = data;
       } else {
