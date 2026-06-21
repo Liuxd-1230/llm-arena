@@ -17,7 +17,7 @@ import { renderWelcome } from './views/welcome.js';
 import { renderDim, setSubmitMode, addEntry, deleteEntry, toggleEntryDetail } from './views/dim.js';
 import { renderCompare, getModelStats, resetModel } from './views/compare.js';
 import { renderRadar, toggleRadarModel, radarShowAll, radarHideAll } from './views/radar.js';
-import { renderEntries } from './views/entries.js';
+import { renderEntries, toggleAnswer, openEntryPreview, closeEntryPreview } from './views/entries.js';
 import { renderPromptView } from './views/prompt.js';
 
 // Components
@@ -55,6 +55,11 @@ window.deleteEntry = deleteEntry;
 window.toggleEntryDetail = toggleEntryDetail;
 
 window.resetModel = resetModel;
+
+// Entry view functions
+window.toggleAnswer = toggleAnswer;
+window.openEntryPreview = openEntryPreview;
+window.closeEntryPreview = closeEntryPreview;
 
 window.toggleRadarModel = toggleRadarModel;
 window.radarShowAll = radarShowAll;
