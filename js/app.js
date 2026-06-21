@@ -33,7 +33,7 @@ import {
   showRevealModal, closeRevealModal, doReveal,
   escHtml, escSrcdoc, shuffle, getDim, getDiff, isAutoDim, hasAutoQ, getLongDocForQuestion,
   buildJudgePrompt,
-  animateElements, animateCards, animateModal
+  animateElements, animateCards, animateModal, addPremiumEffects
 } from './utils.js';
 
 // ============================================================
@@ -100,6 +100,7 @@ window.buildJudgePrompt = buildJudgePrompt;
 window.animateElements = animateElements;
 window.animateCards = animateCards;
 window.animateModal = animateModal;
+window.addPremiumEffects = addPremiumEffects;
 
 // ============================================================
 // Initialize

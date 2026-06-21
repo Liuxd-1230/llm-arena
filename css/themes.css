@@ -99,12 +99,12 @@
 /* === 深色模式（磨砂玻璃质感） === */
 [data-theme="dark"] {
   /* 主色调 - 深蓝灰 + 铜绿点缀 */
-  --bg-primary: #141820;          /* 深蓝黑底 */
-  --bg-secondary: #1A1F2A;        /* 略浅深蓝 */
-  --bg-tertiary: #222836;         /* 卡片底层 */
-  --bg-card: rgba(30, 36, 50, 0.8);  /* 半透明深蓝 */
-  --bg-card-hover: rgba(36, 42, 58, 0.9);
-  --bg-sidebar: #161B24;
+  --bg-primary: #0D1117;          /* 更深的蓝黑底 */
+  --bg-secondary: #161B22;        /* 略浅深蓝 */
+  --bg-tertiary: #1C2128;         /* 卡片底层 */
+  --bg-card: rgba(22, 27, 34, 0.9);  /* 半透明深蓝 - 更不透明 */
+  --bg-card-hover: rgba(28, 33, 40, 0.95);
+  --bg-sidebar: #0D1117;
 
   /* 文字颜色 */
   --text-primary: #E8E4DE;        /* 暖白 */
@@ -134,10 +134,10 @@
   --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.5);
   --shadow-xl: 0 16px 48px rgba(0, 0, 0, 0.6);
 
-  /* 特效 - 磨砂玻璃 */
-  --glass-bg: rgba(30, 36, 50, 0.6);
-  --glass-border: rgba(255, 255, 255, 0.08);
-  --glass-blur: 16px;
+  /* 特效 - 磨砂玻璃 - 更明显的玻璃效果 */
+  --glass-bg: rgba(22, 27, 34, 0.7);
+  --glass-border: rgba(255, 255, 255, 0.12);
+  --glass-blur: 20px;
 
   /* 纹理背景 */
   --texture-marble: 

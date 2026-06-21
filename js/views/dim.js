@@ -75,7 +75,7 @@ export function renderDim(el) {
   const filtered = S.diff === 'all' ? qs : qs.filter(q => q.diff === S.diff);
   el.innerHTML = `
     <div class="sec-head"><div><div class="sec-title"><i class="${dim.icon}" style="color:${dim.color};margin-right:8px;"></i>${dim.name} ${dim.autoScore ? '<span style="font-size:12px;color:var(--gn);font-weight:400;">⚡自动评分</span>' : '<span style="font-size:12px;color:var(--am);font-weight:400;">👁️盲测</span>'}</div><div class="sec-desc">${dim.desc}</div></div></div>
-    <div class="diff-row"><button class="diff-pill ${S.diff === 'all' ? 'active' : ''}" onclick="S.diff='all';render()">全部</button>${DIFFS.map(d => `<button class="diff-pill ${S.diff === d.id ? 'active' : ''}" onclick="S.diff='${d.id}'">${d.emoji} ${d.name}</button>`).join('')}</div>
+    <div class="diff-row"><button class="diff-pill ${S.diff === 'all' ? 'active' : ''}" onclick="S.diff='all';render()">全部</button>${DIFFS.map(d => `<button class="diff-pill ${S.diff === d.id ? 'active' : ''}" onclick="S.diff='${d.id}';render()">${d.emoji} ${d.name}</button>`).join('')}</div>
     <div class="q-grid">${filtered.map(q => {
       const dm = getDiff(q.diff);
       return `<div class="q-card ${S.q?.name === q.name ? 'selected' : ''}" onclick="selectQ('${q.dim}','${q.diff}','${q.name.replace(/'/g, "\\'")}')">

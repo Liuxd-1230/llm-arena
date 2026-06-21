@@ -199,26 +199,33 @@ export function doReveal() {
   render();
 }
 
-// Classical animation helpers
-export function animateElements(selector, animationClass = 'animate-fade-in-up', stagger = true) {
+// Premium animation helpers
+export function animateElements(selector, animationClass = 'entrance-fade-up', stagger = true) {
   const elements = document.querySelectorAll(selector);
   elements.forEach((el, index) => {
+    // Set initial state
     el.style.opacity = '0';
-    el.style.transform = 'translateY(16px)';
+    el.style.transform = 'translateY(24px)';
+    el.style.filter = 'blur(4px)';
     
+    // Animate in with stagger
     setTimeout(() => {
       el.classList.add(animationClass);
       if (stagger) {
-        el.classList.add(`stagger-${Math.min(index + 1, 5)}`);
+        el.classList.add(`stagger-${Math.min(index + 1, 8)}`);
       }
-      el.style.opacity = '';
-      el.style.transform = '';
+      // Clear inline styles after animation starts
+      setTimeout(() => {
+        el.style.opacity = '';
+        el.style.transform = '';
+        el.style.filter = '';
+      }, 50);
     }, 50);
   });
 }
 
 export function animateCards() {
-  animateElements('.q-card, .entry-item, .dim-item, .card');
+  animateElements('.q-card, .entry-item, .dim-item, .card, .card-premium');
 }
 
 export function animateModal(modalId) {
@@ -226,7 +233,25 @@ export function animateModal(modalId) {
   if (modal) {
     const box = modal.querySelector('.modal-box');
     if (box) {
-      box.classList.add('animate-scale-in');
+      box.classList.add('modal-premium');
     }
   }
+}
+
+// Add premium hover effects to elements
+export function addPremiumEffects() {
+  // Add hover-lift to cards
+  document.querySelectorAll('.q-card, .entry-item, .dim-item').forEach(el => {
+    el.classList.add('hover-lift', 'click-shrink');
+  });
+  
+  // Add premium effects to buttons
+  document.querySelectorAll('.btn-primary, .btn-outline').forEach(el => {
+    el.classList.add('btn-premium');
+  });
+  
+  // Add premium effects to inputs
+  document.querySelectorAll('.input, .textarea').forEach(el => {
+    el.classList.add('input-premium');
+  });
 }
