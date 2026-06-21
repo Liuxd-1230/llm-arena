@@ -1,5 +1,6 @@
 // Auto-scoring module for objective LLM evaluation questions
-// Provides reference answers and scoring functions for: code_algo, reasoning, knowledge, instruction, long_context
+// Provides reference answers and scoring functions for: code_algo, reasoning, instruction
+// Knowledge, Chinese, Writing, Creative, Safety, Long Context are NOT auto-scored.
 
 // Normalize answer text for matching: remove markdown, LaTeX, extra spaces
 function normAnswer(answer) {
@@ -21,7 +22,7 @@ const REF_ANSWERS = {
       if (a.includes('o(n)') || a.includes('on)')) score += 15;
       if (answer.includes('return') && (answer.includes('[') || answer.includes('('))) score += 15;
       if (answer.length > 200) score += 10;
-      return { score: Math.min(score, 60), breakdown: { algorithm: score >= 20, complexity: a.includes('o(n)'), implementation: answer.includes('def '), quality: answer.length > 200 }};
+      return { score: Math.min(score, 60), breakdown: { algorithm: score >= 20, complexity: a.includes('o(n)'), implementation: answer.includes('def '), quality: answer.length > 200 } };
     }
   },
   "LRU缓存": {
@@ -37,51 +38,72 @@ const REF_ANSWERS = {
       if (a.includes('ordereddict') || a.includes('linked') || a.includes('链表')) score += 20;
       if (answer.includes('def get') && answer.includes('def put')) score += 20;
       if (a.includes('o(1)')) score += 15;
-      return { score: Math.min(score, 75), breakdown: { class_design: score >= 20, data_structure: a.includes('ordereddict') || a.includes('linked'), methods: answer.includes('def get'), complexity: a.includes('o(1)') }};
+      return { score: Math.min(score, 75), breakdown: { class_design: score >= 20, data_structure: a.includes('ordereddict') || a.includes('linked'), methods: answer.includes('def get'), complexity: a.includes('o(1)') } };
     }
   },
-  "前K个高频元素": {
-    key_concepts: ["Counter", "桶排序", "heap", "heapq", "top-k"],
-    reference: "用Counter统计频率，然后用堆排序或桶排序取前k个。O(n)时间。",
-    code_patterns: ["Counter", "heapq", "most_common", "bucket"],
+  "最长递增子序列": {
+    key_concepts: ["O(nlogn)", "二分查找", "binary search", "动态规划", "patience sorting", "LIS"],
+    reference: "使用二分查找+贪心的O(nlogn)解法。维护一个tails数组，对每个新元素用二分查找找到第一个>=它的位置替换。patience sorting是等价思路。",
+    code_patterns: ["bisect", "import bisect", "tails", "dp", "O(nlogn)", "O(n log n)"],
     max: 90,
     rubric: (answer) => {
       let score = 0;
       const a = answer.toLowerCase();
       const n = normAnswer(answer);
-      if (a.includes('counter') || a.includes('count') || a.includes('频率')) score += 25;
-      if (a.includes('heap') || a.includes('桶') || a.includes('bucket') || a.includes('most_common')) score += 25;
-      if (a.includes('o(n)') || a.includes('on)')) score += 20;
-      if (answer.includes('def ') || answer.includes('return')) score += 20;
-      return { score: Math.min(score, 90), breakdown: { counting: a.includes('counter') || a.includes('count'), selection: a.includes('heap') || a.includes('桶'), complexity: a.includes('o(n)'), implementation: answer.includes('def ') }};
+      // Check for algorithm complexity mention
+      if (n.includes('o(nlogn)') || n.includes('o(nlogn)') || n.includes('o(n*logn)') || n.includes('o(n·logn)') || n.includes('nlogn') || n.includes('nlog') || n.includes('logn')) score += 15;
+      // Check for binary search approach
+      if (n.includes('二分查找') || n.includes('binarysearch') || n.includes('bisect')) score += 15;
+      // Check for dynamic programming mention
+      if (n.includes('动态规划') || n.includes('dynamicprogramming') || n.includes('dp') || n.includes('dp[')) score += 10;
+      // Check for patience sorting or tails array
+      if (n.includes('patiencesorting') || n.includes('耐心排序') || n.includes('tails') || n.includes('tail[')) score += 10;
+      // Check for O(n²) comparison or mention
+      if (n.includes('o(n²)') || n.includes('o(n^2)') || n.includes('on2)') || n.includes('平方')) score += 5;
+      // Check for code implementation
+      if (answer.includes('def ') || answer.includes('class ')) score += 10;
+      if (answer.includes('return') && answer.includes('len')) score += 5;
+      // Check for explanation quality
+      if (answer.length > 400) score += 10;
+      if (n.includes('维护') || n.includes('替换') || n.includes('查找第一个')) score += 5;
+      // Bonus for full code with comments
+      const codeLines = (answer.match(/\n/g) || []).length;
+      if (codeLines > 10) score += 5;
+      return { score: Math.min(score, 90), breakdown: { complexity: n.includes('nlogn') || n.includes('logn'), binary_search: n.includes('二分') || n.includes('bisect'), dp_mention: n.includes('动态规划') || n.includes('dp'), implementation: answer.includes('def '), explanation: answer.length > 400 } };
     }
   },
-  "接雨水": {
-    key_concepts: ["双指针", "two pointer", "左右最大值", "单调栈", "O(n)", "O(1)"],
-    reference: "双指针法：维护左右两侧最大高度，从较矮的一侧向中间移动。时间O(n)空间O(1)。",
+  "带TTL的LFU缓存": {
+    key_concepts: ["OrderedDict", "defaultdict", "双链表", "哈希", "TTL", "过期", "time.time", "频率淘汰", "O(1)"],
+    reference: "LFU+TTL缓存：维护频率→节点的映射 + 哈希表存key→节点。get/put为O(1)。TTL用time.time()比较过期时间。淘汰最低频率+最久未用的节点。",
+    code_patterns: ["class LFUCache", "def get", "def put", "time.time", "ttl", "defaultdict", "OrderedDict", "freq"],
     max: 100,
     rubric: (answer) => {
       let score = 0;
       const a = answer.toLowerCase();
       const n = normAnswer(answer);
-      const len = answer.length;
-      const hasTwoPointer = n.includes('双指针') || n.includes('twopointer') || (n.includes('left') && n.includes('right'));
-      if (hasTwoPointer) score += 15;
-      if (n.includes('o(n)')) score += 10;
-      if (n.includes('o(1)') || n.includes('空间复杂度')) score += 10;
-      if (n.includes('def') && n.includes('while')) score += 5;
-      if (n.includes('木桶') || n.includes('短板') || n.includes('限制因素')) score += 8;
-      if (n.includes('为什么') || n.includes('原理') || n.includes('核心思想')) score += 7;
-      if (n.includes('单调栈') || n.includes('monotonic') || n.includes('动态规划') || n.includes('dp')) score += 8;
-      if (n.includes('示例') || n.includes('测试') || n.includes('输出') || n.includes('print')) score += 7;
-      const codeLines = answer.split('\n').filter(l => l.trim().length > 0);
-      const commentLines = codeLines.filter(l => l.includes('#') || l.includes('"""') || l.includes("'''"));
-      if (commentLines.length >= 3) score += 8; else if (commentLines.length >= 1) score += 4;
-      if (answer.includes('List[') || answer.includes('-> ')) score += 5;
-      if (len > 1500) score += 7; else if (len > 800) score += 4; else if (len > 400) score += 2;
-      const hasSections = (answer.match(/#{1,3}\s/g) || []).length >= 2;
-      if (hasSections) score += 5;
-      return { score: Math.min(score, 100), breakdown: { basic: hasTwoPointer ? 40 : 15, depth: score > 40 ? 30 : 10, quality: score > 70 ? 30 : 10, explanation: `算法:${hasTwoPointer?'✓':'✗'} 解释:${len>800?'深':'浅'} 替代:${n.includes('单调栈')?'有':'无'}` }};
+      // Check for data structure approach
+      if (n.includes('ordereddict') || n.includes('defaultdict') || n.includes('双链表') || n.includes('doubly') || n.includes('linkedlist')) score += 15;
+      // Check for hash + linked list or OrderedDict combination
+      if ((n.includes('dict') || n.includes('hash') || n.includes('哈希')) && (n.includes('链表') || n.includes('linked') || n.includes('ordered'))) score += 10;
+      // Check for TTL / expiry mechanism
+      if (n.includes('ttl') || n.includes('time.time') || n.includes('过期') || n.includes('expire') || n.includes('timestamp')) score += 15;
+      // Check for frequency eviction strategy
+      if (n.includes('频率') || n.includes('freq') || n.includes('freq_count') || n.includes('淘汰') || n.includes('evict') || n.includes('最低频')) score += 10;
+      // Check for O(1) complexity claim
+      if (n.includes('o(1)')) score += 10;
+      // Check for class definition
+      if (answer.includes('class') && (answer.includes('LFU') || answer.includes('lfu') || answer.includes('cache'))) score += 10;
+      // Check for get and put methods
+      if (answer.includes('def get') && answer.includes('def put')) score += 10;
+      // Check for TTL implementation detail
+      if (a.includes('time.time()') || n.includes('time.monotonic') || n.includes('expire_time') || n.includes('created_at')) score += 5;
+      // Check for test cases or usage examples
+      if (n.includes('test') || n.includes('测试') || n.includes('示例') || n.includes('example') || n.includes('assert')) score += 5;
+      // Check for capacity constraint
+      if (n.includes('capacity') || n.includes('容量') || n.includes('max_size')) score += 5;
+      // Length and completeness
+      if (answer.length > 600) score += 5;
+      return { score: Math.min(score, 100), breakdown: { data_structure: n.includes('ordereddict') || n.includes('linked'), ttl: n.includes('ttl') || n.includes('time.time'), frequency: n.includes('频率') || n.includes('freq'), complexity: n.includes('o(1)'), implementation: answer.includes('def get'), tests: n.includes('test') || n.includes('测试') } };
     }
   },
 
@@ -100,9 +122,9 @@ const REF_ANSWERS = {
       if (norm.includes('n(n+1)') || norm.includes('n*(n+1)') || norm.includes('n²+n') || norm.includes('n^2+n') || norm.includes('n*n+n')) score += 15;
       // Reasoning: give credit for each keyword found
       if (norm.includes('差') || norm.includes('递增') || norm.includes('等差')) score += 10;
-      if (norm.includes('验证') || norm.includes('验证') || norm.includes('代入')) score += 5;
+      if (norm.includes('验证') || norm.includes('代入')) score += 5;
       if (answer.length > 200) score += 5;
-      return { score: Math.min(score, 60), breakdown: { correct_answer: norm.includes('42'), formula: norm.includes('n^2+n') || norm.includes('n(n+1)'), reasoning: norm.includes('差') || norm.includes('递增'), detail: answer.length > 200 }};
+      return { score: Math.min(score, 60), breakdown: { correct_answer: norm.includes('42'), formula: norm.includes('n^2+n') || norm.includes('n(n+1)'), reasoning: norm.includes('差') || norm.includes('递增'), detail: answer.length > 200 } };
     }
   },
   "过桥问题": {
@@ -117,104 +139,70 @@ const REF_ANSWERS = {
       if (n.includes('1') && n.includes('2') && n.includes('5') && n.includes('10')) score += 15;
       if (answer.includes('回') || answer.includes('返回') || answer.includes('back')) score += 15;
       if (answer.length > 200) score += 10;
-      return { score: Math.min(score, 75), breakdown: { correct_answer: answer.includes('17'), steps: answer.includes('回') || answer.includes('返回'), detail: answer.length > 200 }};
+      return { score: Math.min(score, 75), breakdown: { correct_answer: answer.includes('17'), steps: answer.includes('回') || answer.includes('返回'), detail: answer.length > 200 } };
     }
   },
-  "蒙提霍尔问题": {
-    key_concepts: ["2/3", "条件概率", "贝叶斯", "换门", "信息不对称"],
-    reference: "换门后中奖概率2/3。因为初始选对概率1/3，选错概率2/3。主持人打开一扇有山羊的门后，选错的2/3概率全部转移到另一扇门。",
-    expected_answer: "2/3",
+  "4门蒙提霍尔": {
+    key_concepts: ["3/8", "条件概率", "贝叶斯", "换门", "四门", "4 doors", "conditional probability"],
+    reference: "4门蒙提霍尔：初始选对概率1/4，选错3/4。主持人打开2扇有山羊的门后，换门中奖概率 = 选错概率 × (换到正确门的概率) = 3/4 × 2/3 = 3/8。或者用条件概率证明：换门后存活概率 = P(初始选错)×P(剩余门中有车|选错) = 3/4 × 2/3 = 3/8。不换门概率为1/4=2/8，所以换门略优。",
+    expected_answer: "3/8",
     max: 90,
     rubric: (answer) => {
       let score = 0;
+      const a = answer.toLowerCase();
       const n = normAnswer(answer);
-      if (n.includes('2/3') || answer.includes('66') || answer.includes('三分之二')) score += 30;
-      if (n.includes('1/3') || n.includes('33%') || n.includes('三分之一')) score += 15;
-      if (n.includes('条件概率') || n.includes('贝叶斯') || n.includes('bayes')) score += 15;
-      if (n.includes('主持人') || n.includes('monty') || n.includes('host')) score += 10;
-      if (answer.length > 300) score += 20;
-      return { score: Math.min(score, 90), breakdown: { correct_prob: answer.includes('2/3'), initial_prob: answer.includes('1/3'), method: answer.includes('条件概率') || answer.includes('贝叶斯'), explanation: answer.length > 300 }};
-    }
-  },
-  "贝叶斯推理": {
-    key_concepts: ["约1.96%", "约2%", "贝叶斯", "假阳性", "先验"],
-    reference: "P(患病|阳性) = P(阳性|患病)×P(患病) / P(阳性) = 0.99×0.001 / (0.99×0.001 + 0.05×0.999) ≈ 0.0194 ≈ 1.94%。直觉高估是因为忽略了基础概率(发病率极低)和假阳性数量。",
-    expected_answer: "约2%",
-    max: 100,
-    rubric: (answer) => {
-      let score = 0;
-      const a = answer;
-      const n = normAnswer(answer);
-      if (n.includes('1.9') || n.includes('2%') || n.includes('1.94') || n.includes('1.96')) score += 30;
-      if (n.includes('贝叶斯') || n.includes('bayes') || n.includes('p(')) score += 20;
-      if (n.includes('0.99') || n.includes('0.001') || n.includes('0.05')) score += 15;
-      if (n.includes('假阳性') || n.includes('falsepositive')) score += 10;
-      if (n.includes('基础概率') || n.includes('先验') || n.includes('prior') || n.includes('发病率')) score += 10;
-      if (answer.length > 400) score += 15;
-      return { score: Math.min(score, 100), breakdown: { correct_answer: a.includes('1.9') || a.includes('2%'), formula: a.includes('贝叶斯'), numbers: a.includes('0.99'), insight: a.includes('假阳性') || a.includes('基础概率') }};
-    }
-  },
-
-  // === Knowledge ===
-  "基础物理": {
-    key_concepts: ["波粒二象性", "干涉", "衍射", "光电效应", "德布罗意", "互补原理"],
-    required_terms: ["波", "粒子", "光"],
-    max: 60,
-    rubric: (answer) => {
-      let score = 0;
-      const terms = ["波", "粒子", "光", "干涉", "衍射", "光电效应", "量子", "德布罗意"];
-      const found = terms.filter(t => answer.includes(t));
-      score += Math.min(found.length * 8, 40);
-      if (answer.length > 100) score += 10;
-      if (answer.length > 200) score += 10;
-      return { score: Math.min(score, 60), breakdown: { terms: found.length, depth: answer.length > 200 }};
-    }
-  },
-  "量子计算": {
-    key_concepts: ["叠加", "纠缠", "量子比特", "qubit", "并行", "Shor", "Grover"],
-    max: 75,
-    rubric: (answer) => {
-      let score = 0;
-      const terms = ["叠加", "纠缠", "量子比特", "qubit", "并行", "经典比特", "0和1", "概率"];
-      const found = terms.filter(t => answer.toLowerCase().includes(t.toLowerCase()));
-      score += Math.min(found.length * 8, 40);
-      if (answer.includes('Shor') || answer.includes('Grover') || answer.includes('肖尔') || answer.includes('格罗弗')) score += 10;
-      if (answer.length > 150) score += 10;
+      // Check for correct probability 3/8
+      if (n.includes('3/8') || answer.includes('37.5') || answer.includes('百分之三十七')) score += 30;
+      // Check for initial probability 1/4
+      if (n.includes('1/4') || n.includes('25%') || n.includes('四分之一')) score += 15;
+      // Check for conditional probability or Bayesian approach
+      if (n.includes('条件概率') || n.includes('贝叶斯') || n.includes('bayes') || n.includes('conditional')) score += 15;
+      // Check for multi-door reasoning (主持人 opens 2 doors)
+      if (n.includes('主持人') || n.includes('host') || n.includes('monty')) score += 5;
+      if (n.includes('打开') || n.includes('open') || n.includes('揭示')) score += 5;
+      // Check for comparison with 3-door version
+      if (n.includes('3门') || n.includes('三门') || n.includes('3-door') || n.includes('经典')) score += 5;
+      // Check for detailed explanation
       if (answer.length > 300) score += 15;
-      return { score: Math.min(score, 75), breakdown: { concepts: found.length, algorithms: answer.includes('Shor') || answer.includes('Grover'), depth: answer.length > 300 }};
+      return { score: Math.min(score, 90), breakdown: { correct_prob: answer.includes('3/8'), initial_prob: answer.includes('1/4'), method: answer.includes('条件概率') || answer.includes('贝叶斯'), explanation: answer.length > 300 } };
     }
   },
-  "CRISPR技术": {
-    key_concepts: ["Cas9", "guide RNA", "gRNA", "PAM", "DNA", "切割", "编辑", "脱靶"],
-    max: 90,
-    rubric: (answer) => {
-      let score = 0;
-      const terms = ["Cas9", "guide RNA", "gRNA", "PAM", "DNA", "切割", "编辑", "脱靶", "靶向", "基因组"];
-      const found = terms.filter(t => answer.includes(t));
-      score += Math.min(found.length * 8, 50);
-      if (answer.includes('PAM') || answer.includes('NGG')) score += 15;
-      if (answer.includes('脱靶') || answer.includes('off-target')) score += 15;
-      if (answer.length > 300) score += 10;
-      return { score: Math.min(score, 90), breakdown: { mechanism: found.length >= 5, pam: answer.includes('PAM'), off_target: answer.includes('脱靶') }};
-    }
-  },
-  "意识难题": {
-    key_concepts: ["hard problem", "qualia", "感质", "功能主义", "泛心论", "IIT", "整合信息"],
+  "100囚犯与灯泡变体": {
+    key_concepts: ["灯泡", "计数器", "指定计数者", "开关灯", "策略", "正确性证明", "期望时间", "light bulb", "counter", "strategy", "proof"],
+    reference: "100囚犯灯泡变体：指定一名计数者(countdown prisoner)。其他人：首次进入且灯灭时开灯(最多开灯一次)。计数者：每次进入且灯亮时关灯并计数+1。当计数达到99时宣布所有人来过。正确性：每人最多贡献1次计数，不会多计。期望时间约O(n² log n)量级。",
     max: 100,
     rubric: (answer) => {
       let score = 0;
-      const theories = ["功能主义", "泛心论", "IIT", "整合信息"];
-      const found = theories.filter(t => answer.includes(t));
-      score += found.length * 15;
-      if (answer.includes('感质') || answer.includes('qualia') || answer.includes('主观体验')) score += 15;
-      if (answer.includes('Chalmers') || answer.includes('查尔默斯') || answer.includes('hard problem')) score += 15;
-      if (answer.length > 400) score += 10;
-      return { score: Math.min(score, 100), breakdown: { theories: found.length, qualia: answer.includes('感质') || answer.includes('qualia'), depth: answer.length > 400 }};
+      const a = answer.toLowerCase();
+      const n = normAnswer(answer);
+      // Check for strategy design
+      if (n.includes('策略') || n.includes('strategy') || n.includes('方案') || n.includes('方法')) score += 15;
+      // Check for correctness proof (no false alarm)
+      if (n.includes('证明') || n.includes('proof') || n.includes('正确性') || n.includes('不会误报') || n.includes('不会多计')) score += 15;
+      // Check for light bulb / switch concept
+      if (n.includes('灯') || n.includes('灯泡') || n.includes('light') || n.includes('bulb') || n.includes('开关') || n.includes('switch')) score += 10;
+      // Check for counter / designated prisoner role
+      if (n.includes('计数') || n.includes('counter') || n.includes('指定') || n.includes('记录') || n.includes('角色')) score += 10;
+      // Check for expected time analysis
+      if (n.includes('期望') || n.includes('expected') || n.includes('平均') || n.includes('数量级') || n.includes('时间复杂')) score += 10;
+      // Check for 2 state changes constraint
+      if (n.includes('2次') || n.includes('两次') || n.includes('最多') || n.includes('限制')) score += 5;
+      // Check for code or pseudocode
+      if (answer.includes('def ') || answer.includes('for ') || answer.includes('while ') || answer.includes('if ')) score += 10;
+      // Check for explanation depth
+      if (answer.length > 500) score += 10;
+      // Check for counting to 99
+      if (n.includes('99') || n.includes('计数到')) score += 5;
+      // Check for initial state unknown handling
+      if (n.includes('初始') || n.includes('未知') || n.includes('unknown') || n.includes('initial')) score += 5;
+      // Check for 100 prisoners context
+      if (n.includes('100') && (n.includes('囚犯') || n.includes('prisoner') || n.includes('犯人'))) score += 5;
+      return { score: Math.min(score, 100), breakdown: { strategy: n.includes('策略') || n.includes('方案'), proof: n.includes('证明') || n.includes('正确性'), light_bulb: n.includes('灯') || n.includes('light'), counter: n.includes('计数') || n.includes('counter'), expected_time: n.includes('期望') || n.includes('expected'), explanation: answer.length > 500 } };
     }
   },
 
   // === Instruction Following ===
-  "格式遵循": {
+  "严格JSON输出": {
     max: 60,
     rubric: (answer) => {
       let score = 0;
@@ -229,12 +217,12 @@ const REF_ANSWERS = {
           const valid = parsed.filter(item => item.name && item.color && item.taste);
           score += Math.min(valid.length * 6, 30);
         }
-      } catch(e) {
+      } catch (e) {
         // Not valid JSON, partial credit
         if (a.includes('[') && a.includes(']')) score += 10;
         if (a.includes('name') || a.includes('color') || a.includes('taste')) score += 10;
       }
-      return { score: Math.min(score, 60), breakdown: { json_valid: score >= 30, array_correct: score >= 30, fields_complete: score >= 50 }};
+      return { score: Math.min(score, 60), breakdown: { json_valid: score >= 30, array_correct: score >= 30, fields_complete: score >= 50 } };
     }
   },
   "多步指令": {
@@ -243,7 +231,7 @@ const REF_ANSWERS = {
       let score = 0;
       const n = normAnswer(answer);
       const steps = ['1', '2', '3', '4', '5'];
-      const found = steps.filter(s => n.includes(s+')') || n.includes(s+'.') || n.includes('步骤'+s) || n.includes('step'+s));
+      const found = steps.filter(s => n.includes(s + ')') || n.includes(s + '.') || n.includes('步骤' + s) || n.includes('step' + s));
       score += found.length * 10;
       // Check for specific content
       if (answer.includes('*') || answer.includes('△') || answer.includes('^')) score += 10; // triangle
@@ -251,10 +239,10 @@ const REF_ANSWERS = {
       if (answer.includes('3') && answer.includes('5') && answer.includes('7')) score += 5; // primes
       if (answer.includes('15') || answer.includes('1111') || answer.includes('1110')) score += 5; // binary
       if (answer.length > 100) score += 10;
-      return { score: Math.min(score, 75), breakdown: { steps_present: found.length, triangle: answer.includes('*'), reasoning: answer.length > 100 }};
+      return { score: Math.min(score, 75), breakdown: { steps_present: found.length, triangle: answer.includes('*'), reasoning: answer.length > 100 } };
     }
   },
-  "精确格式": {
+  "精确格式约束": {
     max: 90,
     rubric: (answer) => {
       let score = 0;
@@ -270,88 +258,40 @@ const REF_ANSWERS = {
       const cols = ['类型', 'GC', '并发', '适用'];
       const found = cols.filter(c => a.includes(c));
       score += found.length * 10;
-      // Check brevity (each cell ≤ 10 chars is hard to verify, but table format is good)
+      // Check row count (3 languages = 3 data rows)
       if (a.split('|').length > 10) score += 10;
-      return { score: Math.min(score, 90), breakdown: { table_format: a.includes('|'), languages: score >= 40, columns: found.length, completeness: a.split('|').length > 10 }};
+      return { score: Math.min(score, 90), breakdown: { table_format: a.includes('|'), languages: score >= 40, columns: found.length, completeness: a.split('|').length > 10 } };
     }
   },
-  "自我约束": {
+  "不可能约束组合": {
     max: 100,
     rubric: (answer) => {
       let score = 0;
-      const lines = answer.split('\n').filter(l => l.trim().length > 0);
-      // Check word count ≈ 200
-      const charCount = answer.replace(/\s/g, '').length;
-      if (charCount > 100 && charCount < 400) score += 15;
-      // Check no '的' (hard constraint)
-      const rawAnswer = answer;
-      const deCount = (rawAnswer.match(/的/g) || []).length;
-      if (deCount === 0) score += 25;
-      else if (deCount <= 3) score += 10;
-      // Check for self-report of violations
-      if (n.includes('违反') || n.includes('约束') || n.includes('的字') || n.includes('violation')) score += 20;
-      // Check sentence structure (12 chars per sentence is hard to verify)
-      if (n.includes('比喻') || n.includes('像') || n.includes('如') || n.includes('似')) score += 15;
-      if (answer.length > 100) score += 15;
-      // Bonus for actually trying all constraints
-      if (deCount <= 1 && n.includes('约束')) score += 10;
-      return { score: Math.min(score, 100), breakdown: { length: charCount > 100, no_de: deCount === 0, self_report: answer.includes('违反') || answer.includes('约束'), metaphor: answer.includes('比喻') || answer.includes('像') }};
-    }
-  },
-
-  // === Long Context ===
-  "信息提取": {
-    max: 60,
-    rubric: (answer) => {
-      let score = 0;
+      const a = answer;
       const n = normAnswer(answer);
-      if (n.includes('Guido') || answer.includes('guido') || answer.includes('吉多') || answer.includes('范罗苏姆')) score += 20;
-      if (answer.includes('可读') || answer.includes('readab')) score += 20;
-      if (answer.includes('面向对象') || answer.includes('命令式') || answer.includes('函数式') || answer.includes('object')) score += 20;
-      return { score: Math.min(score, 60), breakdown: { creator: answer.includes('Guido'), philosophy: answer.includes('可读'), paradigms: answer.includes('面向对象') }};
-    }
-  },
-  "长文总结": {
-    max: 75,
-    rubric: (answer) => {
-      let score = 0;
-      const points = ['独立部署', '技术栈', '故障隔离', '复杂性', '数据一致', 'DevOps', '分布式单体'];
-      const found = points.filter(p => answer.includes(p));
-      score += Math.min(found.length * 8, 40);
-      // Check for counter-argument
-      if (answer.includes('分布式单体') || answer.includes('初创') || answer.includes('反模式') || answer.includes('过早')) score += 20;
-      if (answer.length > 100) score += 15;
-      return { score: Math.min(score, 75), breakdown: { key_points: found.length, counter_argument: answer.includes('分布式单体') || answer.includes('初创'), depth: answer.length > 100 }};
-    }
-  },
-  "矛盾检测": {
-    max: 90,
-    rubric: (answer) => {
-      let score = 0;
-      const contradictions = [
-        ['高端', '大众'], ['利润', '增长'], ['品质', '速度'],
-        ['不做低端', '入门级'], ['不牺牲', '速度比完美']
-      ];
-      const found = contradictions.filter(([a, b]) => answer.includes(a) && answer.includes(b));
-      score += found.length * 15;
+      const lines = answer.split('\n').filter(l => l.trim().length > 0);
+      // Check ALIGNMENT acrostic (first letter of each line)
+      const firstLetters = lines.map(l => l.trim().charAt(0).toLowerCase()).join('');
+      if (firstLetters.includes('alignment')) score += 20;
+      else if (n.includes('alignment')) score += 10;
+      // Check for no digits
+      const digitCount = (answer.match(/\d/g) || []).length;
+      if (digitCount === 0) score += 15;
+      else if (digitCount <= 2) score += 5;
+      // Check for rhyme pattern (AABB) — look for repeated end chars
+      if (lines.length >= 4) {
+        const endings = lines.slice(0, 4).map(l => l.trim().charAt(l.trim().length - 1));
+        if (endings[0] === endings[1] && endings[2] === endings[3]) score += 10;
+      }
+      // Check for self-report of violations (honesty)
+      if (n.includes('违反') || n.includes('约束') || n.includes('violation') || n.includes('无法满足') || n.includes('冲突')) score += 20;
+      // Check for constraint conflict acknowledgment
+      if (n.includes('冲突') || n.includes('矛盾') || n.includes('不可能') || n.includes('conflict')) score += 10;
+      // Check for poem content (AI alignment theme)
+      if (n.includes('对齐') || n.includes('alignment') || n.includes('ai') || n.includes('智能')) score += 10;
+      // Length check
       if (answer.length > 200) score += 15;
-      return { score: Math.min(score, 90), breakdown: { contradictions_found: found.length, detail: answer.length > 200 }};
-    }
-  },
-  "跨文档推理": {
-    max: 100,
-    rubric: (answer) => {
-      let score = 0;
-      const terms = ['增长', '留存', 'NPS', '烧钱', '毛利率', '技术债', '竞品', '融资', '跑道'];
-      const found = terms.filter(t => answer.includes(t));
-      score += Math.min(found.length * 8, 50);
-      // Check for clear recommendation
-      if (answer.includes('投资') || answer.includes('不建议') || answer.includes('谨慎') || answer.includes('推荐')) score += 20;
-      // Check for reasoning
-      if (answer.length > 300) score += 20;
-      // Check for balanced analysis
-      if ((answer.includes('优势') || answer.includes('积极')) && (answer.includes('风险') || answer.includes('问题'))) score += 10;
-      return { score: Math.min(score, 100), breakdown: { data_coverage: found.length, recommendation: answer.includes('投资') || answer.includes('建议'), analysis: answer.length > 300, balanced: (answer.includes('优势') || answer.includes('积极')) && (answer.includes('风险') || answer.includes('问题')) }};
+      return { score: Math.min(score, 100), breakdown: { acrostic: firstLetters.includes('alignment'), no_digits: digitCount === 0, rhyme: lines.length >= 4, honesty: n.includes('违反') || n.includes('冲突'), explanation: answer.length > 200 } };
     }
   }
 };
