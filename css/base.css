@@ -72,3 +72,92 @@ code{
   opacity:0.2;
   margin:24px 0;
 }
+
+/* 深色模式多色流光效果 */
+@keyframes flowGlow {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+[data-theme="dark"] .flow-glow {
+  position: relative;
+  overflow: hidden;
+}
+
+[data-theme="dark"] .flow-glow::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  right: -50%;
+  bottom: -50%;
+  background: 
+    radial-gradient(ellipse at 20% 50%, rgba(93, 168, 154, 0.15) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 20%, rgba(107, 156, 196, 0.12) 0%, transparent 50%),
+    radial-gradient(ellipse at 50% 80%, rgba(168, 85, 247, 0.08) 0%, transparent 50%);
+  background-size: 200% 200%;
+  animation: flowGlow 8s ease-in-out infinite;
+  pointer-events: none;
+  z-index: 0;
+}
+
+[data-theme="dark"] .flow-glow > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* 侧边栏流光效果 */
+[data-theme="dark"] .sidebar {
+  position: relative;
+  overflow: hidden;
+}
+
+[data-theme="dark"] .sidebar::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: 
+    linear-gradient(180deg, 
+      rgba(93, 168, 154, 0.05) 0%,
+      transparent 30%,
+      rgba(107, 156, 196, 0.03) 60%,
+      transparent 100%
+    );
+  pointer-events: none;
+  z-index: 0;
+}
+
+[data-theme="dark"] .sidebar > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* 导航栏底部流光线 */
+[data-theme="dark"] .nav::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(93, 168, 154, 0.4) 20%,
+    rgba(107, 156, 196, 0.3) 50%,
+    rgba(168, 85, 247, 0.2) 80%,
+    transparent
+  );
+  animation: flowGlow 6s ease-in-out infinite;
+  background-size: 200% 100%;
+}

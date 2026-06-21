@@ -199,10 +199,22 @@ export function doReveal() {
   render();
 }
 
-// Subtle animation helpers
+// Subtle animation helpers - only animate new elements
+let lastAnimatedElements = new Set();
+
 export function animateElements(selector, animationClass = 'entrance-fade-up', stagger = true) {
   const elements = document.querySelectorAll(selector);
+  const newElements = [];
+  
   elements.forEach((el, index) => {
+    // Check if this element was already animated (by checking if it has the animation class)
+    if (!el.classList.contains(animationClass)) {
+      newElements.push(el);
+    }
+  });
+  
+  // Only animate truly new elements
+  newElements.forEach((el, index) => {
     // Set initial state - just opacity
     el.style.opacity = '0';
     
@@ -221,7 +233,8 @@ export function animateElements(selector, animationClass = 'entrance-fade-up', s
 }
 
 export function animateCards() {
-  animateElements('.q-card, .entry-item, .dim-item, .card');
+  // Only animate cards, not tabs or other UI elements
+  animateElements('.q-card, .entry-item, .dim-item');
 }
 
 export function animateModal(modalId) {
