@@ -130,5 +130,13 @@ window.toggleTheme = toggleTheme;
 // Initialize theme before rendering
 initTheme();
 
-renderSidebar();
-render();
+// Initialize IndexedDB and load data
+loadFromIndexedDB().then(() => {
+  renderSidebar();
+  render();
+}).catch(e => {
+  console.error('Failed to load from IndexedDB:', e);
+  // Fallback to localStorage data
+  renderSidebar();
+  render();
+});

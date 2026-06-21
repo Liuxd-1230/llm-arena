@@ -166,13 +166,25 @@ export function runFuncCheck() {
   document.getElementById('funcModal').classList.add('show');
 }
 
-export function exportAll() {
-  const b = new Blob([JSON.stringify(S, null, 2)], { type: 'application/json' });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(b);
-  a.download = `llm-arena-${new Date().toISOString().slice(0, 10)}.json`;
-  a.click();
-  toast('已导出');
+export async function exportAll() {
+  try {
+    const { exportData } = await import('./db.js');
+    const data = await exportData();
+    const b = new Blob([data], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(b);
+    a.download = `llm-arena-${new Date().toISOString().slice(0, 10)}.json`;
+    a.click();
+    toast('已导出');
+  } catch (e) {
+    // Fallback to localStorage export
+    const b = new Blob([JSON.stringify(S, null, 2)], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(b);
+    a.download = `llm-arena-${new Date().toISOString().slice(0, 10)}.json`;
+    a.click();
+    toast('已导出');
+  }
 }
 
 export function closeFuncModal() {
