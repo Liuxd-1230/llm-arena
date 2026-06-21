@@ -1,0 +1,392 @@
+/* ========================================
+   古希腊主题 (Ancient Greek Theme)
+   浅色：大理石质感 | 深色：磨砂玻璃质感
+   ======================================== */
+
+/* === 浅色模式（大理石质感） === */
+:root,
+[data-theme="light"] {
+  /* 主色调 - 大理石白 + 金色点缀 */
+  --bg-primary: #FAF8F5;          /* 暖白大理石底 */
+  --bg-secondary: #F2EDE8;        /* 略深的米色 */
+  --bg-tertiary: #E8E0D8;         /* 石纹灰 */
+  --bg-card: #FFFFFF;             /* 纯白卡片 */
+  --bg-card-hover: #FBF9F7;       /* 卡片悬浮 */
+  --bg-sidebar: #F5F0EB;          /* 侧边栏 */
+
+  /* 文字颜色 */
+  --text-primary: #2C2420;        /* 深棕黑 */
+  --text-secondary: #6B5E54;      /* 中灰棕 */
+  --text-tertiary: #9B8E84;       /* 浅灰棕 */
+  --text-muted: #B8ADA4;          /* 最浅 */
+
+  /* 强调色 - 古典金 */
+  --accent: #C4993C;              /* 古典金 */
+  --accent-hover: #B8892E;        /* 深金 */
+  --accent-light: rgba(196, 153, 60, 0.12);  /* 金色光晕 */
+
+  /* 功能色 */
+  --success: #5A8F6A;             /* 橄榄绿 */
+  --warning: #C4993C;             /* 金色 */
+  --error: #B85450;               /* 赤陶红 */
+  --info: #5B7FA5;                /* 爱琴蓝 */
+
+  /* 边框与分割线 */
+  --border: #E0D8D0;              /* 石纹边框 */
+  --border-light: #EBE5DE;        /* 浅边框 */
+  --divider: #E8E0D8;             /* 分割线 */
+
+  /* 阴影 - 柔和大理石阴影 */
+  --shadow-sm: 0 1px 3px rgba(44, 36, 32, 0.06);
+  --shadow-md: 0 4px 12px rgba(44, 36, 32, 0.08);
+  --shadow-lg: 0 8px 24px rgba(44, 36, 32, 0.12);
+  --shadow-xl: 0 16px 48px rgba(44, 36, 32, 0.16);
+
+  /* 特效 */
+  --glass-bg: rgba(255, 255, 255, 0.7);
+  --glass-border: rgba(255, 255, 255, 0.5);
+  --glass-blur: 12px;
+
+  /* 纹理背景 */
+  --texture-marble: 
+    linear-gradient(135deg, rgba(232, 224, 216, 0.3) 0%, transparent 50%),
+    linear-gradient(225deg, rgba(196, 153, 60, 0.05) 0%, transparent 50%);
+  --texture-noise: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+
+  /* 侧边栏特殊 */
+  --sidebar-bg: #F5F0EB;
+  --sidebar-active: rgba(196, 153, 60, 0.1);
+  --sidebar-hover: rgba(44, 36, 32, 0.04);
+
+  /* 输入框 */
+  --input-bg: #FFFFFF;
+  --input-border: #D8CFC6;
+  --input-focus: var(--accent);
+
+  /* 按钮 */
+  --btn-primary-bg: var(--accent);
+  --btn-primary-text: #FFFFFF;
+  --btn-secondary-bg: transparent;
+  --btn-secondary-text: var(--text-primary);
+  --btn-secondary-border: var(--border);
+
+  /* 滚动条 */
+  --scrollbar-track: var(--bg-secondary);
+  --scrollbar-thumb: var(--border);
+  --scrollbar-thumb-hover: var(--text-tertiary);
+
+  /* 代码块 */
+  --code-bg: #F5F0EB;
+  --code-text: #8B4513;
+
+  /* 雷达图 */
+  --radar-grid: rgba(44, 36, 32, 0.1);
+  --radar-label: var(--text-secondary);
+
+  /* 维度颜色 - 古典调色板 */
+  --dim-algo: #5B7FA5;            /* 爱琴蓝 */
+  --dim-reason: #7B6B8A;          /* 薰衣草紫 */
+  --dim-instruct: #5A8F6A;        /* 橄榄绿 */
+  --dim-knowledge: #C4993C;       /* 古典金 */
+  --dim-chinese: #B85450;         /* 赤陶红 */
+  --dim-writing: #6B8E7B;         /* 鼠尾草绿 */
+  --dim-creative: #D4845A;        /* 陶土橙 */
+  --dim-safety: #8B7355;          /* 赭石棕 */
+  --dim-longctx: #6A8FA5;         /* 青瓷蓝 */
+  --dim-frontend: #A0785A;        /* 青铜色 */
+}
+
+/* === 深色模式（磨砂玻璃质感） === */
+[data-theme="dark"] {
+  /* 主色调 - 深蓝灰 + 铜绿点缀 */
+  --bg-primary: #141820;          /* 深蓝黑底 */
+  --bg-secondary: #1A1F2A;        /* 略浅深蓝 */
+  --bg-tertiary: #222836;         /* 卡片底层 */
+  --bg-card: rgba(30, 36, 50, 0.8);  /* 半透明深蓝 */
+  --bg-card-hover: rgba(36, 42, 58, 0.9);
+  --bg-sidebar: #161B24;
+
+  /* 文字颜色 */
+  --text-primary: #E8E4DE;        /* 暖白 */
+  --text-secondary: #9BA3B0;      /* 冷灰 */
+  --text-tertiary: #6B7280;       /* 中灰 */
+  --text-muted: #4B5563;          /* 暗灰 */
+
+  /* 强调色 - 铜绿 (Patina) */
+  --accent: #5DA89A;              /* 铜绿 */
+  --accent-hover: #4D9888;        /* 深铜绿 */
+  --accent-light: rgba(93, 168, 154, 0.15);  /* 铜绿光晕 */
+
+  /* 功能色 */
+  --success: #5DA89A;             /* 铜绿 */
+  --warning: #D4A853;             /* 暗金 */
+  --error: #D46B68;               /* 暗红 */
+  --info: #6B9AC4;                /* 冰蓝 */
+
+  /* 边框与分割线 */
+  --border: rgba(255, 255, 255, 0.08);
+  --border-light: rgba(255, 255, 255, 0.04);
+  --divider: rgba(255, 255, 255, 0.06);
+
+  /* 阴影 - 深色阴影 */
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.5);
+  --shadow-xl: 0 16px 48px rgba(0, 0, 0, 0.6);
+
+  /* 特效 - 磨砂玻璃 */
+  --glass-bg: rgba(30, 36, 50, 0.6);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --glass-blur: 16px;
+
+  /* 纹理背景 */
+  --texture-marble: 
+    linear-gradient(135deg, rgba(93, 168, 154, 0.03) 0%, transparent 50%),
+    linear-gradient(225deg, rgba(107, 156, 196, 0.03) 0%, transparent 50%);
+  --texture-noise: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.02'/%3E%3C/svg%3E");
+
+  /* 侧边栏 */
+  --sidebar-bg: #161B24;
+  --sidebar-active: rgba(93, 168, 154, 0.12);
+  --sidebar-hover: rgba(255, 255, 255, 0.03);
+
+  /* 输入框 */
+  --input-bg: rgba(30, 36, 50, 0.6);
+  --input-border: rgba(255, 255, 255, 0.1);
+  --input-focus: var(--accent);
+
+  /* 按钮 */
+  --btn-primary-bg: var(--accent);
+  --btn-primary-text: #141820;
+  --btn-secondary-bg: transparent;
+  --btn-secondary-text: var(--text-primary);
+  --btn-secondary-border: var(--border);
+
+  /* 滚动条 */
+  --scrollbar-track: var(--bg-secondary);
+  --scrollbar-thumb: rgba(255, 255, 255, 0.1);
+  --scrollbar-thumb-hover: rgba(255, 255, 255, 0.2);
+
+  /* 代码块 */
+  --code-bg: rgba(30, 36, 50, 0.8);
+  --code-text: #D4A853;
+
+  /* 雷达图 */
+  --radar-grid: rgba(255, 255, 255, 0.08);
+  --radar-label: var(--text-secondary);
+
+  /* 维度颜色 - 深色调色板 */
+  --dim-algo: #6B9AC4;            /* 冰蓝 */
+  --dim-reason: #9B8AB8;          /* 丁香紫 */
+  --dim-instruct: #5DA89A;        /* 铜绿 */
+  --dim-knowledge: #D4A853;       /* 暗金 */
+  --dim-chinese: #D46B68;         /* 暗红 */
+  --dim-writing: #7BAF8F;         /* 翡翠绿 */
+  --dim-creative: #D4945A;        /* 琥珀橙 */
+  --dim-safety: #A08060;          /* 黄褐 */
+  --dim-longctx: #7AAFC4;         /* 天青蓝 */
+  --dim-frontend: #C49A6A;        /* 古铜金 */
+}
+
+/* === 全局主题切换过渡 === */
+*,
+*::before,
+*::after {
+  transition: background-color 0.3s ease, 
+              color 0.3s ease, 
+              border-color 0.3s ease,
+              box-shadow 0.3s ease;
+}
+
+/* === 纹理叠加层 === */
+body::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: var(--texture-marble);
+  pointer-events: none;
+  z-index: -1;
+}
+
+body::after {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: var(--texture-noise);
+  background-size: 256px 256px;
+  pointer-events: none;
+  z-index: -1;
+  opacity: 0.5;
+}
+
+/* === 玻璃质感卡片 === */
+.glass-card {
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+}
+
+/* === 古典装饰线 === */
+.ornament-line {
+  height: 2px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--accent) 20%,
+    var(--accent) 80%,
+    transparent
+  );
+  opacity: 0.3;
+}
+
+/* === 古典角标 === */
+.ornament-corner {
+  position: relative;
+}
+
+.ornament-corner::before,
+.ornament-corner::after {
+  content: '';
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--accent);
+  opacity: 0.3;
+}
+
+.ornament-corner::before {
+  top: -4px;
+  left: -4px;
+  border-right: none;
+  border-bottom: none;
+}
+
+.ornament-corner::after {
+  bottom: -4px;
+  right: -4px;
+  border-left: none;
+  border-top: none;
+}
+
+/* === 柱式装饰（用于侧边栏） === */
+.column-ornament {
+  position: relative;
+}
+
+.column-ornament::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: linear-gradient(
+    180deg,
+    transparent,
+    var(--accent) 15%,
+    var(--accent) 85%,
+    transparent
+  );
+  opacity: 0.2;
+}
+
+/* === 主题切换按钮 === */
+.theme-toggle {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--glass-border);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  box-shadow: var(--shadow-md);
+  transition: all 0.3s ease;
+}
+
+.theme-toggle:hover {
+  transform: scale(1.1);
+  box-shadow: var(--shadow-lg);
+}
+
+.theme-toggle .icon {
+  font-size: 20px;
+  color: var(--text-primary);
+}
+
+/* === 浅色模式下主题切换按钮图标 === */
+:root .theme-toggle .icon-sun,
+[data-theme="light"] .theme-toggle .icon-sun {
+  display: none;
+}
+
+:root .theme-toggle .icon-moon,
+[data-theme="light"] .theme-toggle .icon-moon {
+  display: block;
+}
+
+/* === 深色模式下主题切换按钮图标 === */
+[data-theme="dark"] .theme-toggle .icon-sun {
+  display: block;
+}
+
+[data-theme="dark"] .theme-toggle .icon-moon {
+  display: none;
+}
+
+/* === 希腊回纹装饰（Greek Key） === */
+.greek-key-border {
+  border-image: repeating-linear-gradient(
+    90deg,
+    var(--accent) 0px,
+    var(--accent) 8px,
+    transparent 8px,
+    transparent 12px,
+    var(--accent) 12px,
+    var(--accent) 16px,
+    transparent 16px,
+    transparent 20px
+  ) 2;
+  opacity: 0.2;
+}
+
+/* === 月桂叶装饰（用于标题） === */
+.laurel-title {
+  position: relative;
+  display: inline-block;
+  padding: 0 24px;
+}
+
+.laurel-title::before,
+.laurel-title::after {
+  content: '🌿';
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 16px;
+  opacity: 0.6;
+}
+
+.laurel-title::before {
+  left: 0;
+}
+
+.laurel-title::after {
+  right: 0;
+  transform: translateY(-50%) scaleX(-1);
+}

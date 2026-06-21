@@ -98,5 +98,24 @@ window.buildJudgePrompt = buildJudgePrompt;
 // ============================================================
 // Initialize
 // ============================================================
+
+// Theme initialization
+function initTheme() {
+  const saved = localStorage.getItem('llm_arena_theme') || 'dark';
+  document.documentElement.setAttribute('data-theme', saved);
+}
+
+function toggleTheme() {
+  const current = document.documentElement.getAttribute('data-theme') || 'dark';
+  const next = current === 'dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', next);
+  localStorage.setItem('llm_arena_theme', next);
+}
+
+window.toggleTheme = toggleTheme;
+
+// Initialize theme before rendering
+initTheme();
+
 renderSidebar();
 render();
