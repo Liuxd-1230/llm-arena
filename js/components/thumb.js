@@ -69,6 +69,57 @@ export function openPreview(idx) {
   document.getElementById('previewCodePre').textContent = item.answer;
   document.getElementById('previewCodeArea').style.display = 'none';
   previewCodeVisible = false;
+  
+  // Generate rubric content dynamically
+  const rubric = document.getElementById('previewRubric');
+  rubric.innerHTML = `
+    <h4><i class="ri-bar-chart-2-line"></i> 评分面板</h4>
+    <div class="preview-rubric-item">
+      <div class="preview-rubric-label">视觉设计</div>
+      <div class="preview-rubric-desc">布局、配色、视觉层次</div>
+      <div class="preview-score-row">
+        <input type="number" class="preview-score-input" id="scoreVisual" min="0" max="25" placeholder="0">
+        <span style="color:var(--t4);font-size:12px">/ 25</span>
+      </div>
+    </div>
+    <div class="preview-rubric-item">
+      <div class="preview-rubric-label">交互体验</div>
+      <div class="preview-rubric-desc">可用性、响应性、动效</div>
+      <div class="preview-score-row">
+        <input type="number" class="preview-score-input" id="scoreInteract" min="0" max="25" placeholder="0">
+        <span style="color:var(--t4);font-size:12px">/ 25</span>
+      </div>
+    </div>
+    <div class="preview-rubric-item">
+      <div class="preview-rubric-label">代码质量</div>
+      <div class="preview-rubric-desc">结构、语义、可维护性</div>
+      <div class="preview-score-row">
+        <input type="number" class="preview-score-input" id="scoreCode" min="0" max="25" placeholder="0">
+        <span style="color:var(--t4);font-size:12px">/ 25</span>
+      </div>
+    </div>
+    <div class="preview-rubric-item">
+      <div class="preview-rubric-label">创意完成度</div>
+      <div class="preview-rubric-desc">创意性、完整性、独特性</div>
+      <div class="preview-score-row">
+        <input type="number" class="preview-score-input" id="scoreCreative" min="0" max="25" placeholder="0">
+        <span style="color:var(--t4);font-size:12px">/ 25</span>
+      </div>
+    </div>
+    <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border);">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+        <span style="font-size:13px;font-weight:600;">总分</span>
+        <span class="preview-total" id="previewTotal">0</span>
+      </div>
+      <input type="text" class="preview-note" id="previewNote" placeholder="评分备注（可选）">
+      <div class="preview-actions">
+        <button class="btn btn-primary" onclick="submitPreviewScore()"><i class="ri-check-line"></i> 提交</button>
+        <button class="btn btn-outline" onclick="previewNext()"><i class="ri-skip-forward-line"></i> 跳过</button>
+      </div>
+    </div>
+  `;
+  
+  // Set initial values
   document.getElementById('scoreVisual').value = '';
   document.getElementById('scoreInteract').value = '';
   document.getElementById('scoreCode').value = '';
