@@ -26,6 +26,9 @@ class Handler(SimpleHTTPRequestHandler):
     def do_GET(self):
         if self.path == "/api/state":
             self._handle_get_state()
+        elif self.path == "/favicon.ico":
+            self.send_response(204)
+            self.end_headers()
         else:
             super().do_GET()
 
@@ -85,9 +88,10 @@ class Handler(SimpleHTTPRequestHandler):
 
     def log_message(self, format, *args):
         """简化日志"""
-        if "/api/" in (args[0] if args else ""):
+        msg = str(args[0]) if args else ""
+        if "/api/" in msg:
             print(f"  API: {args[0]}")
-        elif not any(x in (args[0] if args else "") for x in [".css", ".js", ".ico"]):
+        elif not any(x in msg for x in [".css", ".js", ".ico", "favicon"]):
             super().log_message(format, *args)
 
 
