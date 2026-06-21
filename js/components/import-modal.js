@@ -57,15 +57,42 @@ export function doImportScore() {
     else { entry.note = '双轨评分'; }
   } else {
     const jsonStr = document.getElementById('importJson').value.trim();
+    if (!jsonStr) { toast('请粘贴JSON', 'ri-error-warning-line'); return; }
     try {
       const data = JSON.parse(jsonStr);
-      entry.llmScore = Math.min(data.total_score || 0, dm.max);
-      entry.llmNote = data.overall_comment || data.comment || '强模型评测';
+      // Handle multiple JSON formats
+      let score = 0;
+      let comment = '';
+      
+      if (data.total_score !== undefined) {
+        score = data.total_score;
+        comment = data.overall_comment || data.comment || '';
+      } else if (data.score !== undefined) {
+        score = data.score;
+        comment = data.comment || data.note || '';
+      } else if (data.total !== undefined) {
+        score = data.total;
+        comment = data.feedback || data评价 || '';
+      } else if (typeof data === 'number') {
+        score = data;
+      } else {
+        // Try to find any numeric value as score
+        const keys = Object.keys(data);
+        for (const key of keys) {
+          if (typeof data[key] === 'number' && data[key] >= 0 && data[key] <= 100) {
+            score = data[key];
+            break;
+          }
+        }
+      }
+      
+      entry.llmScore = Math.min(score, dm.max);
+      entry.llmNote = comment || '强模型评测';
       entry.llmDetail = data;
       if (!entry.autoScore) { entry.score = entry.llmScore; entry.note = entry.llmNote; }
       else { entry.note = '双轨评分'; }
     } catch (e) {
-      toast('JSON格式错误', 'ri-error-warning-line');
+      toast('JSON格式错误: ' + e.message, 'ri-error-warning-line');
       return;
     }
   }

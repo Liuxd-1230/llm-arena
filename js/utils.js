@@ -113,7 +113,7 @@ export function buildJudgePrompt(questionPrompt, answer) {
     "信息提取": "doc_python",
     "长文总结": "doc_microservices",
     "矛盾检测": "doc_ceo_jan",
-    "跨文档推理": "doc_investment"
+    "跨文档综合投资建议": "doc_investment"
   })) {
     if (questionPrompt.includes(qName) || (typeof S !== 'undefined' && S.q && S.q.name === qName)) {
       if (typeof LONG_DOCS !== 'undefined' && LONG_DOCS[dId]) {
