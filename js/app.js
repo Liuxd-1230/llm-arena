@@ -4,7 +4,7 @@
  */
 
 // State (for inline onclick references like S.diff='all')
-import { S } from './state.js';
+import { S, loadState, save, exportToFile, importFromFile } from './state.js';
 
 // Router (showView, selectDim, selectQ, render)
 import { showView, selectDim, selectQ, render } from './router.js';
@@ -96,6 +96,21 @@ window.copyForLLMJudge = copyForLLMJudge;
 window.copyForLLMJudgeNew = copyForLLMJudgeNew;
 window.runFuncCheck = runFuncCheck;
 window.exportAll = exportAll;
+window.exportToFile = exportToFile;
+window.importFromFile = importFromFile;
+window.handleFileImport = async function(input) {
+  const file = input.files[0];
+  if (!file) return;
+  try {
+    const count = await importFromFile(file);
+    toast(`已导入 ${count} 条记录`);
+    renderSidebar();
+    render();
+  } catch (e) {
+    toast('导入失败: ' + e.message, 'ri-error-warning-line');
+  }
+  input.value = '';
+};
 window.closeFuncModal = closeFuncModal;
 window.showRevealModal = showRevealModal;
 window.closeRevealModal = closeRevealModal;
@@ -130,5 +145,8 @@ window.toggleTheme = toggleTheme;
 // Initialize theme before rendering
 initTheme();
 
-renderSidebar();
-render();
+// 从服务器加载最新数据，降级到 localStorage
+loadState().then(() => {
+  renderSidebar();
+  render();
+});

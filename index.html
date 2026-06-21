@@ -31,7 +31,9 @@
     </div>
     <div style="display:flex;align-items:center;gap:8px">
       <button class="btn-icon nav-hamburger" style="display:none" onclick="toggleSidebar()"><i class="ri-menu-line"></i></button>
-      <button class="btn btn-ghost btn-sm" onclick="exportAll()"><i class="ri-download-2-line"></i> 导出</button>
+      <input type="file" id="fileImportInput" accept=".json" style="display:none" onchange="handleFileImport(this)">
+      <button class="btn btn-ghost btn-sm" onclick="document.getElementById('fileImportInput').click()" title="从文件恢复数据"><i class="ri-upload-2-line"></i> 导入</button>
+      <button class="btn btn-ghost btn-sm" onclick="exportToFile()" title="下载备份文件"><i class="ri-download-2-line"></i> 备份</button>
       <button class="btn btn-outline btn-sm" onclick="showRevealModal()"><i class="ri-eye-line"></i> 揭盲</button>
     </div>
   </div>
