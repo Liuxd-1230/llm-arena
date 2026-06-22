@@ -120,6 +120,7 @@ export function renderCollectPanel() {
         <button class="btn btn-primary" id="submitBtn" onclick="addEntry()"><i class="ri-add-line"></i> ${dim.autoScore ? '⚡自动评分' : '提交'}</button>
         ${dim.isCode ? `<button class="btn btn-outline" onclick="runFuncCheck()"><i class="ri-checkbox-circle-line"></i> 功能检测</button>` : ''}
         <button class="btn btn-outline" onclick="copyForLLMJudgeNew()" title="复制完整Prompt给强模型评分"><i class="ri-robot-line"></i> 复制给强模型</button>
+        <button class="btn btn-outline" onclick="window._startApiRunForCurrent()" title="用配置的 API 自动回答当前问题" style="color:var(--ac);"><i class="ri-robot-2-line"></i> 🤖 自动答题</button>
       </div>
       ${existing.length > 0 ? `
       <div class="label" style="margin-top:16px;">已收集 (${existing.length})</div>
@@ -140,6 +141,7 @@ export function renderCollectPanel() {
             <span style="font-size:12px;color:var(--t3);">${e.qName}</span>
             <span style="margin-left:auto;font-size:12px;">${scoreDisplay.join(' ')}</span>
             <button class="btn btn-ghost btn-xs" onclick="event.stopPropagation();copyForLLMJudge(${e.id})" title="复制Prompt给强模型"><i class="ri-robot-line"></i></button>
+            ${!e.llmScore && e.answer ? `<button class="btn btn-ghost btn-xs" onclick="event.stopPropagation();startApiJudge(${e.id})" title="API自动评价"><i class="ri-robot2-line"></i></button>` : ''}
             <button class="btn btn-ghost btn-xs" onclick="event.stopPropagation();openImportModal(${e.id})" title="导入强模型评分"><i class="ri-braces-line"></i></button>
             <button class="btn btn-ghost btn-xs" onclick="event.stopPropagation();deleteEntry(${e.id})" title="删除"><i class="ri-delete-bin-line"></i></button>
           </div>

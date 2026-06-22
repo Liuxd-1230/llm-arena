@@ -1,2 +1,4 @@
 data_storage/
 node_modules/
+__pycache__/
+*.pyc

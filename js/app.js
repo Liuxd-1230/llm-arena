@@ -19,11 +19,14 @@ import { renderCompare, getModelStats, resetModel } from './views/compare.js';
 import { renderRadar, toggleRadarModel, radarShowAll, radarHideAll } from './views/radar.js';
 import { renderEntries, toggleAnswer, openEntryPreview, closeEntryPreview, toggleEntriesView, toggleModelGroup } from './views/entries.js';
 import { renderPromptView } from './views/prompt.js';
+import { renderStats } from './views/stats.js';
 
 // Components
 import { startBlind, showBlindItem, toggleCode, submitBlindScore, skipBlind, exitBlind } from './components/blind.js';
 import { startThumbView, renderThumbGrid, exitThumbView, openPreview, calcPreviewTotal, togglePreviewCode, submitPreviewScore, previewPrev, previewNext, closePreview } from './components/thumb.js';
 import { openImportModal, closeImportModal, setImportMode, doImportScore } from './components/import-modal.js';
+import { startApiJudge, startBatchJudge, openJudgeConfigModal } from './components/api-judge.js';
+import { startApiRun, startBatchRun } from './components/api-runner.js';
 import { toast } from './components/toast.js';
 
 // Utils (clipboard, reveal modal, func check, export)
@@ -90,6 +93,22 @@ window.closeImportModal = closeImportModal;
 window.setImportMode = setImportMode;
 window.doImportScore = doImportScore;
 
+// API Judge functions
+window.startApiJudge = startApiJudge;
+window.startBatchJudge = startBatchJudge;
+window.openJudgeConfigModal = openJudgeConfigModal;
+
+// API Runner functions
+window.startApiRun = startApiRun;
+window.startBatchRun = startBatchRun;
+window._startApiRunForCurrent = function() {
+  if (S.q && S.dim) {
+    startApiRun(S.dim, S.q.diff, S.q.name);
+  } else {
+    toast('请先选择题目', 'ri-error-warning-line');
+  }
+};
+
 window.toast = toast;
 window.copyText = copyText;
 window.fallbackCopy = fallbackCopy;
@@ -120,6 +139,8 @@ window.doReveal = doReveal;
 window.buildJudgePrompt = buildJudgePrompt;
 
 // Animation functions
+window.renderStats = renderStats;
+
 window.animateElements = animateElements;
 window.animateCards = animateCards;
 window.animateModal = animateModal;

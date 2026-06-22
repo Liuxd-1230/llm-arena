@@ -1,6 +1,6 @@
 /**
  * import-modal.js — 导入评分弹窗组件
- * 支持JSON粘贴和手动打分两种导入模式
+ * 支持JSON粘贴、手动打分、AI自动评价三种导入模式
  */
 
 import { S, save } from '../state.js';
@@ -10,6 +10,14 @@ import { renderSidebar } from './sidebar.js';
 import { render } from '../router.js';
 
 export let importTargetEntryId = null;
+
+const API_CONFIG_KEY = 'llm_arena_api_config';
+
+function loadApiProfiles() {
+  try {
+    return JSON.parse(localStorage.getItem(API_CONFIG_KEY)) || [];
+  } catch { return []; }
+}
 
 export function openImportModal(entryId) {
   importTargetEntryId = entryId;
@@ -23,6 +31,16 @@ export function openImportModal(entryId) {
   document.getElementById('importManualScore').value = entry.score || '';
   document.getElementById('importManualNote').value = entry.note || '';
   document.getElementById('importJson').value = '';
+
+  // Populate AI judge profile selector
+  const profiles = loadApiProfiles();
+  const profileSelect = document.getElementById('importJudgeProfile');
+  if (profileSelect) {
+    profileSelect.innerHTML = profiles.length === 0
+      ? '<option value="">⚠️ 无 API 配置</option>'
+      : profiles.map((p, i) => `<option value="${i}">${p.name} (${p.model})</option>`).join('');
+  }
+
   setImportMode('json');
   document.getElementById('importModal').classList.add('show');
 }
@@ -35,8 +53,10 @@ export function closeImportModal() {
 export function setImportMode(mode) {
   document.getElementById('importJsonWrap').style.display = mode === 'json' ? '' : 'none';
   document.getElementById('importManualWrap').style.display = mode === 'manual' ? '' : 'none';
+  document.getElementById('importJudgeWrap').style.display = mode === 'judge' ? '' : 'none';
   document.getElementById('btnJsonMode').classList.toggle('active', mode === 'json');
   document.getElementById('btnManualMode').classList.toggle('active', mode === 'manual');
+  document.getElementById('btnJudgeMode').classList.toggle('active', mode === 'judge');
 }
 
 export function doImportScore() {
@@ -45,7 +65,15 @@ export function doImportScore() {
   if (!entry) return;
   const dm = getDiff(entry.qDiff);
 
-  const isManual = document.getElementById('importManualWrap').style.display !== 'none';
+  const isJudge = document.getElementById('importJudgeWrap').style.display !== 'none';
+  const isManual = !isJudge && document.getElementById('importManualWrap').style.display !== 'none';
+
+  if (isJudge) {
+    // AI Judge mode — handled by doImportJudgeScore
+    doImportJudgeScore(entry, dm);
+    return;
+  }
+
   if (isManual) {
     const score = parseInt(document.getElementById('importManualScore').value);
     const note = document.getElementById('importManualNote').value.trim();
@@ -105,4 +133,45 @@ export function doImportScore() {
   toast(`已更新 ${entry.blindId}: ${track}`);
   renderSidebar();
   render();
+}
+
+// ==================== AI Judge tab ====================
+
+async function doImportJudgeScore(entry, dm) {
+  const profileSelect = document.getElementById('importJudgeProfile');
+  const profileIdx = parseInt(profileSelect.value);
+  if (isNaN(profileIdx)) {
+    toast('请选择 API Profile', 'ri-error-warning-line');
+    return;
+  }
+
+  const profiles = loadApiProfiles();
+  const profile = profiles[profileIdx];
+  if (!profile) {
+    toast('无效的 Profile', 'ri-error-warning-line');
+    return;
+  }
+
+  if (!entry.answer) {
+    toast('该记录无回答内容', 'ri-error-warning-line');
+    return;
+  }
+
+  // Show loading state on button
+  const btn = document.querySelector('#importModal .modal-foot .btn-primary');
+  const origHtml = btn.innerHTML;
+  btn.innerHTML = '<i class="ri-loader-4-line" style="animation:spin 1s linear infinite;"></i> 评价中...';
+  btn.disabled = true;
+
+  try {
+    // Dynamically import to avoid circular deps
+    const { startApiJudge } = await import('./api-judge.js');
+    await startApiJudge(entry.id, profile);
+    closeImportModal();
+  } catch (err) {
+    toast('评价失败: ' + err.message, 'ri-error-warning-line');
+  } finally {
+    btn.innerHTML = origHtml;
+    btn.disabled = false;
+  }
 }

@@ -137,6 +137,7 @@
     <div style="display:flex;gap:8px;margin-bottom:12px;">
       <button class="btn btn-outline btn-sm active" id="btnJsonMode" onclick="setImportMode('json')">粘贴JSON</button>
       <button class="btn btn-outline btn-sm" id="btnManualMode" onclick="setImportMode('manual')">手动打分</button>
+      <button class="btn btn-outline btn-sm" id="btnJudgeMode" onclick="setImportMode('judge')">🤖 AI评价</button>
     </div>
     <div id="importJsonWrap">
       <textarea id="importJson" placeholder='{"total_score": 85, "accuracy": {...}, "completeness": {...}, ...}' style="width:100%;min-height:180px;padding:14px;background:var(--s2);border:1px solid var(--bdr);border-radius:var(--r8);color:var(--t1);font-family:var(--mono);font-size:12px;line-height:1.5;resize:vertical;outline:none;"></textarea>
@@ -146,6 +147,17 @@
         <input type="number" id="importManualScore" min="0" max="100" placeholder="分数" style="width:100px;padding:8px 12px;background:var(--s2);border:1px solid var(--bdr);border-radius:var(--r8);color:var(--t1);font-size:20px;font-weight:700;text-align:center;font-family:var(--mono);outline:none;">
         <span style="font-size:14px;color:var(--t4);" id="importManualMax">/ 100</span>
         <input type="text" id="importManualNote" placeholder="备注（可选）" style="flex:1;padding:8px 12px;background:var(--s2);border:1px solid var(--bdr);border-radius:var(--r8);color:var(--t1);font-size:13px;outline:none;font-family:var(--sans);">
+      </div>
+    </div>
+    <div id="importJudgeWrap" style="display:none;">
+      <div style="padding:16px;background:var(--s2);border:1px solid var(--bdr);border-radius:var(--r8);">
+        <div style="font-size:13px;font-weight:600;margin-bottom:12px;"><i class="ri-robot2-line" style="color:var(--accent);margin-right:4px;"></i> AI 自动评价</div>
+        <div style="font-size:12px;color:var(--text-secondary);margin-bottom:12px;">选择一个 API Profile 作为 Judge 模型，系统将自动发送评分请求并导入结果。</div>
+        <div class="label">Judge 模型</div>
+        <select id="importJudgeProfile" class="input" style="width:100%;margin-bottom:12px;">
+          <option value="">加载中...</option>
+        </select>
+        <div style="font-size:11px;color:var(--text-muted);">💡 推荐使用与被测模型不同的强模型（如 GPT-4o 评价 Claude 的回答）</div>
       </div>
     </div>
     <div class="modal-foot">

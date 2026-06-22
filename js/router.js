@@ -12,6 +12,8 @@ import { renderEntries } from './views/entries.js';
 import { renderCompare } from './views/compare.js';
 import { renderRadar } from './views/radar.js';
 import { renderPromptView } from './views/prompt.js';
+import { renderStats } from './views/stats.js';
+import { renderApiConfig } from './views/api-config.js';
 import { animateCards, addPremiumEffects } from './utils.js';
 
 export function showView(v) {
@@ -50,6 +52,8 @@ export function render(el) {
   else if (S.view === 'compare') renderCompare(el);
   else if (S.view === 'radar') renderRadar(el);
   else if (S.view === 'prompt') renderPromptView(el);
+  else if (S.view === 'stats') renderStats(el);
+  else if (S.view === 'api-config') renderApiConfig(el);
   
   // Add premium animations and effects to rendered elements
   setTimeout(() => {

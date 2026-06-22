@@ -3,12 +3,16 @@
 LLM Arena 本地服务器
 - 提供静态文件服务
 - /api/state GET/POST 读写本地 JSON 文件
-- 数据存在 data/state.json，清浏览器缓存也不丢
+- /api/llm POST 代理 OpenAI 兼容 API（支持流式/非流式）
+- 数据存在 data_storage/state.json，清浏览器缓存也不丢
 """
 
 import json
 import os
 import sys
+import ssl
+import urllib.request
+import urllib.error
 from http.server import HTTPServer, SimpleHTTPRequestHandler
 from pathlib import Path
 
@@ -19,9 +23,12 @@ DATA_FILE = DATA_DIR / "state.json"
 # 确保数据目录存在
 DATA_DIR.mkdir(exist_ok=True)
 
+# SSL context for outbound API calls
+SSL_CTX = ssl.create_default_context()
+
 
 class Handler(SimpleHTTPRequestHandler):
-    """处理静态文件 + /api/state 接口"""
+    """处理静态文件 + /api/state + /api/llm 接口"""
 
     def do_GET(self):
         if self.path == "/api/state":
@@ -35,8 +42,12 @@ class Handler(SimpleHTTPRequestHandler):
     def do_POST(self):
         if self.path == "/api/state":
             self._handle_post_state()
+        elif self.path == "/api/llm":
+            self._handle_llm_proxy()
         else:
             self.send_error(404)
+
+    # ==================== /api/state ====================
 
     def _handle_get_state(self):
         """返回本地存储的 state JSON"""
@@ -65,6 +76,132 @@ class Handler(SimpleHTTPRequestHandler):
             self._json_response(400, json.dumps({"error": f"Invalid JSON: {e}"}))
         except Exception as e:
             self._json_response(500, json.dumps({"error": str(e)}))
+
+    # ==================== /api/llm ====================
+
+    def _handle_llm_proxy(self):
+        """代理转发到外部 OpenAI 兼容 API（支持流式和非流式）"""
+        try:
+            length = int(self.headers.get("Content-Length", 0))
+            body = self.rfile.read(length).decode("utf-8")
+            req_data = json.loads(body)
+
+            endpoint = req_data.get("endpoint", "").rstrip("/")
+            api_key = req_data.get("api_key", "")
+            model = req_data.get("model", "")
+            messages = req_data.get("messages", [])
+            max_tokens = req_data.get("max_tokens", 2048)
+            temperature = req_data.get("temperature", 0.7)
+            stream = req_data.get("stream", False)
+
+            if not endpoint or not api_key or not model:
+                self._json_response(400, json.dumps({
+                    "error": "缺少 endpoint、api_key 或 model 参数"
+                }))
+                return
+
+            # 智能拼接 URL：如果 endpoint 已经以 /chat/completions 结尾就直接用
+            if endpoint.endswith("/chat/completions"):
+                url = endpoint
+            elif endpoint.endswith("/v1"):
+                url = endpoint + "/chat/completions"
+            elif "/v1/" in endpoint:
+                url = endpoint  # 已经包含 v1/路径，直接追加 chat/completions 可能不对
+                if not endpoint.endswith("/chat/completions"):
+                    url = endpoint.rstrip("/") + "/chat/completions"
+            else:
+                url = endpoint + "/v1/chat/completions"
+
+            payload = {
+                "model": model,
+                "messages": messages,
+                "max_tokens": max_tokens,
+                "temperature": temperature,
+                "stream": stream
+            }
+
+            data = json.dumps(payload).encode("utf-8")
+            req = urllib.request.Request(url, data=data, method="POST")
+            req.add_header("Content-Type", "application/json")
+            req.add_header("Authorization", f"Bearer {api_key}")
+
+            if stream:
+                self._handle_streaming_response(req)
+            else:
+                self._handle_normal_response(req)
+
+        except json.JSONDecodeError as e:
+            self._json_response(400, json.dumps({"error": f"Invalid JSON: {e}"}))
+        except Exception as e:
+            self._json_response(500, json.dumps({
+                "error": f"代理请求失败: {str(e)}"
+            }))
+
+    def _handle_normal_response(self, req):
+        """非流式请求：转发并返回完整响应"""
+        try:
+            resp = urllib.request.urlopen(req, timeout=120, context=SSL_CTX)
+            result = resp.read().decode("utf-8")
+            status = resp.getcode()
+            # 回传上游的状态码和内容类型
+            self.send_response(status)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.end_headers()
+            self.wfile.write(result.encode("utf-8"))
+        except urllib.error.HTTPError as e:
+            error_body = e.read().decode("utf-8", errors="replace")
+            self.send_response(e.code)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.end_headers()
+            self.wfile.write(json.dumps({
+                "error": f"API 返回 {e.code}: {error_body[:1000]}"
+            }).encode("utf-8"))
+        except urllib.error.URLError as e:
+            self._json_response(502, json.dumps({
+                "error": f"无法连接到 API: {str(e.reason)}"
+            }))
+        except Exception as e:
+            self._json_response(502, json.dumps({
+                "error": f"请求失败: {str(e)}"
+            }))
+
+    def _handle_streaming_response(self, req):
+        """流式请求：SSE 透传"""
+        try:
+            resp = urllib.request.urlopen(req, timeout=120, context=SSL_CTX)
+            self.send_response(200)
+            self.send_header("Content-Type", "text/event-stream; charset=utf-8")
+            self.send_header("Cache-Control", "no-cache")
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.end_headers()
+
+            for line in resp:
+                decoded = line.decode("utf-8", errors="replace")
+                self.wfile.write(decoded.encode("utf-8"))
+                self.wfile.flush()
+
+            resp.close()
+        except urllib.error.HTTPError as e:
+            error_body = e.read().decode("utf-8", errors="replace")
+            try:
+                err_msg = json.dumps({"error": f"API 流式错误 {e.code}: {error_body[:500]}"})
+                self.wfile.write(f"data: {err_msg}\n\n".encode("utf-8"))
+                self.wfile.write(b"data: [DONE]\n\n")
+                self.wfile.flush()
+            except Exception:
+                pass
+        except Exception as e:
+            try:
+                err_msg = json.dumps({"error": f"流式请求失败: {str(e)}"})
+                self.wfile.write(f"data: {err_msg}\n\n".encode("utf-8"))
+                self.wfile.write(b"data: [DONE]\n\n")
+                self.wfile.flush()
+            except Exception:
+                pass
+
+    # ==================== 工具方法 ====================
 
     def _json_response(self, code, body):
         self.send_response(code)
@@ -102,6 +239,7 @@ if __name__ == "__main__":
 ║   LLM Arena 本地服务器                   ║
 ║   http://localhost:{PORT}                 ║
 ║   数据存储: {DATA_FILE}                  ║
+║   LLM 代理: POST /api/llm               ║
 ╚══════════════════════════════════════════╝
 """)
     server = HTTPServer(("", PORT), Handler)

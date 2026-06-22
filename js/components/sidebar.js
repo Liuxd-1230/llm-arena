@@ -28,6 +28,8 @@ export function renderSidebar() {
       <div class="sb-item ${S.view === 'compare' ? 'active' : ''}" onclick="showView('compare')"><i class="ri-bar-chart-grouped-line"></i> 模型对比</div>
       <div class="sb-item ${S.view === 'radar' ? 'active' : ''}" onclick="showView('radar')"><i class="ri-pie-chart-2-line"></i> 雷达图对比</div>
       <div class="sb-item ${S.view === 'prompt' ? 'active' : ''}" onclick="showView('prompt')"><i class="ri-file-text-line"></i> 评分Prompt</div>
+      <div class="sb-item ${S.view === 'stats' ? 'active' : ''}" onclick="showView('stats')"><i class="ri-bar-chart-2-line"></i> 数据统计</div>
+      <div class="sb-item ${S.view === 'api-config' ? 'active' : ''}" onclick="showView('api-config')"><i class="ri-settings-3-line"></i> API 配置</div>
     </div>
     <div style="padding:0 16px;margin-top:auto;"><div style="font-size:11px;color:var(--t4);line-height:1.6;"><i class="ri-lock-line"></i> 双盲模式<br>客观题⚡自动评分<br>主观题全屏盲测</div></div>
   `;
