@@ -79,9 +79,10 @@
 
 /* Responsive */
 @media(max-width:900px){
-  .main-grid{grid-template-columns:1fr}.content{padding:16px}
+  .main-grid{grid-template-columns:1fr}.content{padding:12px 16px}
   .dim-grid{grid-template-columns:1fr}.q-grid{grid-template-columns:1fr}
   .nav-hamburger{display:flex!important}
+  .shell{padding:0 12px}
   .sidebar{
     position:fixed;top:56px;left:0;bottom:0;width:260px;z-index:90;
     transform:translateX(-100%);transition:transform 0.2s;
@@ -93,4 +94,8 @@
     background:rgba(0,0,0,0.5);z-index:80;
   }
   .sidebar-overlay.show{display:block}
+  .sec-head{flex-direction:column;align-items:flex-start;gap:8px}
+  .diff-row{flex-wrap:wrap}
+  .cmp-table{font-size:12px}
+  .cmp-table th,.cmp-table td{padding:8px 6px}
 }

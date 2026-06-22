@@ -92,21 +92,22 @@
 }
 
 /* Tabs */
-.tab-row{
+.tab-row,.tabs{
   display:flex;gap:2px;
   background:var(--bg-tertiary);padding:3px;
-  border-radius:var(--r8);margin-bottom:20px;
+  border-radius:var(--r8);
   border:1px solid var(--border);
 }
-.tab-btn{
+.tab-row{margin-bottom:20px}
+.tab-btn,.tab{
   flex:1;display:flex;align-items:center;justify-content:center;
   gap:6px;padding:8px 12px;
   background:transparent;border:none;border-radius:var(--r6);
   color:var(--text-tertiary);font-size:13px;font-weight:500;
   font-family:var(--sans);cursor:pointer;transition:all 0.15s;
 }
-.tab-btn:hover{color:var(--text-secondary)}
-.tab-btn.active{color:var(--text-primary);background:var(--bg-card)}
+.tab-btn:hover,.tab:hover{color:var(--text-secondary)}
+.tab-btn.active,.tab.active{color:var(--text-primary);background:var(--bg-card);box-shadow:var(--shadow-sm)}
 
 /* Toast */
 .toast{
