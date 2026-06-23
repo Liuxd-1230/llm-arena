@@ -6,7 +6,7 @@
 import { DIMS, DIFFS } from './data/questions.js';
 import { toast } from './components/toast.js';
 import { S, save } from './state.js';
-import { render } from './router.js';
+// 动态导入 render 以避免循环依赖 (utils ↔ router)
 
 // Re-export toast for convenience
 export { toast } from './components/toast.js';
@@ -203,11 +203,12 @@ export function closeRevealModal() {
   document.getElementById('revealModal').classList.remove('show');
 }
 
-export function doReveal() {
+export async function doReveal() {
   S.revealed = true;
   save();
   closeRevealModal();
   toast('已揭盲');
+  const { render } = await import('../router.js');
   render();
 }
 
