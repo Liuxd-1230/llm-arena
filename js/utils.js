@@ -45,13 +45,16 @@ export function escSrcdoc(s) {
 export function stripCodeFence(s) {
   if (!s) return s;
   s = s.trim();
-  // 匹配完整代码围栏: ```[lang]\n[content]\n```
+  // 1. 完整围栏包裹整个内容: ```[lang]\n[content]\n```
   const m = s.match(/^```[ \t]*(?:\w+)?[ \t]*(?:\r?\n)?([\s\S]*?)\r?\n?[ \t]*```[ \t]*$/i);
   if (m) return m[1].trim();
-  // 兜底: 只有开头围栏没有结尾围栏 → 剥掉开头
-  const m2 = s.match(/^```[ \t]*(?:\w+)?[ \t]*(?:\r?\n)?([\s\S]*)/i);
+  // 2. 围栏在中间（前面有说明文字）: 提取 ```html ... ``` 内的 HTML
+  const m2 = s.match(/```[ \t]*(?:html|HTML)[ \t]*(?:\r?\n)?([\s\S]*?)\r?\n?[ \t]*```/);
   if (m2) return m2[1].trim();
-  // 最终兜底: 任何以 ``` 开头或结尾的内容都剥掉
+  // 3. 兜底: 只有开头围栏
+  const m3 = s.match(/^```[ \t]*(?:\w+)?[ \t]*(?:\r?\n)?([\s\S]*)/i);
+  if (m3) return m3[1].trim();
+  // 4. 最终兜底: 剥掉任何残余的 ```
   return s.replace(/^```[^\n]*\n?/, '').replace(/\n?```[ \t]*$/, '').trim();
 }
 
