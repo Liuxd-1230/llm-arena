@@ -46,15 +46,13 @@ export function stripCodeFence(s) {
   if (!s) return s;
   s = s.trim();
   // 匹配完整代码围栏: ```[lang]\n[content]\n```
-  // - [ \t]*(?:\w+)?  允许空格和任意语言标签(大小写不敏感)
-  // - (?:\r?\n)?      开头围栏后换行可选
-  // - \r?\n?          结尾围栏前换行可选
   const m = s.match(/^```[ \t]*(?:\w+)?[ \t]*(?:\r?\n)?([\s\S]*?)\r?\n?[ \t]*```[ \t]*$/i);
   if (m) return m[1].trim();
   // 兜底: 只有开头围栏没有结尾围栏 → 剥掉开头
   const m2 = s.match(/^```[ \t]*(?:\w+)?[ \t]*(?:\r?\n)?([\s\S]*)/i);
   if (m2) return m2[1].trim();
-  return s;
+  // 最终兜底: 任何以 ``` 开头或结尾的内容都剥掉
+  return s.replace(/^```[^\n]*\n?/, '').replace(/\n?```[ \t]*$/, '').trim();
 }
 
 /**
