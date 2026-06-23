@@ -5,7 +5,7 @@
 
 import { DIMS, QS, DIFFS } from '../data/questions.js';
 import { S, save } from '../state.js';
-import { getDim, getDiff, hasAutoQ, getLongDocForQuestion, stripCodeFence, extractThinking } from '../utils.js';
+import { getDim, getDiff, hasAutoQ, getLongDocForQuestion, stripCodeFence, extractThinking, escapeAttr } from '../utils.js';
 import { toast } from '../components/toast.js';
 import { renderSidebar } from '../components/sidebar.js';
 import { render } from '../router.js';
@@ -79,7 +79,7 @@ export function renderDim(el) {
     <div class="diff-row"><button class="diff-pill ${S.diff === 'all' ? 'active' : ''}" onclick="S.diff='all';render()">全部</button>${DIFFS.map(d => `<button class="diff-pill ${S.diff === d.id ? 'active' : ''}" onclick="S.diff='${d.id}';render()">${d.emoji} ${d.name}</button>`).join('')}</div>
     <div class="q-grid">${filtered.map(q => {
       const dm = getDiff(q.diff);
-      return `<div class="q-card ${S.q?.name === q.name ? 'selected' : ''}" onclick="selectQ('${q.dim}','${q.diff}','${q.name.replace(/'/g, "\\'")}')">
+      return `<div class="q-card ${S.q?.name === q.name ? 'selected' : ''}" onclick="selectQ('${escapeAttr(q.dim)}','${escapeAttr(q.diff)}','${escapeAttr(q.name)}')">
       <div class="q-card-head"><span class="q-card-diff" style="background:${dim.color}15;color:${dim.color}">${dm.emoji} ${dm.name}</span><span style="margin-left:auto;font-size:11px;color:var(--t4);">上限${dm.max}分</span></div>
       <div class="q-card-name">${q.name}</div><div class="q-card-desc">${q.prompt.slice(0, 60)}...</div></div>`;
     }).join('')}</div>

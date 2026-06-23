@@ -4,7 +4,7 @@
  */
 
 import { DIMS } from '../data/questions.js';
-import { getDiff } from '../utils.js';
+import { getDiff, escapeAttr } from '../utils.js';
 import { getModelStats } from './compare.js';
 
 export let radarVisible = {};
@@ -22,7 +22,7 @@ export function renderRadar(el) {
         <div class="label" style="margin-bottom:8px;">模型选择</div>
         <div style="display:flex;flex-direction:column;gap:6px;">
           ${sorted.map((m, i) => `<label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;padding:6px 10px;border-radius:var(--r6);background:${radarVisible[m.name] ? colors[i % colors.length] + '15' : 'transparent'};border:1px solid ${radarVisible[m.name] ? colors[i % colors.length] + '40' : 'var(--bdr)'};">
-            <input type="checkbox" ${radarVisible[m.name] ? 'checked' : ''} onchange="toggleRadarModel('${m.name.replace(/'/g, "\\'")}',this.checked)" style="accent-color:${colors[i % colors.length]};">
+            <input type="checkbox" ${radarVisible[m.name] ? 'checked' : ''} onchange="toggleRadarModel('${escapeAttr(m.name)}',this.checked)" style="accent-color:${colors[i % colors.length]};">
             <span style="width:10px;height:10px;border-radius:50%;background:${colors[i % colors.length]};flex-shrink:0;"></span>
             <span style="flex:1;font-weight:${radarVisible[m.name] ? '600' : '400'};color:${radarVisible[m.name] ? 'var(--t1)' : 'var(--t4)'};">${m.name}</span>
             <span style="font-family:var(--mono);font-size:12px;color:var(--t3);">${m.avgScore}</span>

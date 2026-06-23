@@ -7,6 +7,7 @@ import { DIMS } from '../data/questions.js';
 import { S, save } from '../state.js';
 import { renderSidebar } from '../components/sidebar.js';
 import { render } from '../router.js';
+import { escapeAttr } from '../utils.js';
 import { toast } from '../components/toast.js';
 
 export function getModelStats() {
@@ -52,7 +53,7 @@ export function renderCompare(el) {
           const s = m.dimAvg[d.id];
           return s !== undefined ? `<span style="font-size:11px;color:${d.color};margin-right:6px;" title="${d.name}">${s}</span>` : '';
         }).join('')}</td>
-        <td><button class="btn btn-ghost btn-xs" onclick="resetModel('${m.name.replace(/'/g, "\\'")}')" title="清除该模型所有评分"><i class="ri-delete-bin-line"></i></button></td>
+        <td><button class="btn btn-ghost btn-xs" onclick="resetModel('${escapeAttr(m.name)}')" title="清除该模型所有评分"><i class="ri-delete-bin-line"></i></button></td>
       </tr>`;
       }).join('')}
     </tbody></table></div>`}`;

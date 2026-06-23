@@ -4,7 +4,7 @@
  */
 
 import { S } from '../state.js';
-import { getDim, isAutoDim, escSrcdoc, escHtml, stripCodeFence, renderThinkingBubble } from '../utils.js';
+import { getDim, isAutoDim, escSrcdoc, escHtml, stripCodeFence, renderThinkingBubble, escapeAttr } from '../utils.js';
 
 // 视图模式：flat（平铺）| group（按模型分组）
 let viewMode = 'group';
@@ -136,7 +136,7 @@ function renderGroupedView(entries) {
     const dims = [...new Set(items.map(e => getDim(e.dimId)?.name).filter(Boolean))];
 
     return `<div class="model-group" style="margin-bottom:16px;">
-      <div class="model-group-header" onclick="toggleModelGroup('${model.replace(/'/g, "\\'")}')" style="
+      <div class="model-group-header" onclick="toggleModelGroup('${escapeAttr(model)}')" style="
         display:flex;align-items:center;gap:12px;padding:12px 16px;
         background:var(--bg-tertiary);border:1px solid var(--border);border-radius:var(--r8);
         cursor:pointer;transition:all 0.15s;user-select:none;

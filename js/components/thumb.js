@@ -30,7 +30,7 @@ export function renderThumbGrid() {
     const dm = getDiff(item.qDiff);
     const scored = item.score !== null && item.score !== undefined;
     return `<div class="thumb-card ${scored ? 'thumb-card-scored' : ''}" ${scored ? `data-score="${item.score}分"` : ''} onclick="event.stopPropagation();openPreview(${idx})" style="cursor:pointer;">
-      <div class="thumb-frame-wrap"><iframe sandbox="" srcdoc="${escSrcdoc(stripCodeFence(item.answer))}" loading="lazy"></iframe></div>
+      <div class="thumb-frame-wrap"><iframe sandbox="allow-same-origin" srcdoc="${escSrcdoc(stripCodeFence(item.answer))}" loading="lazy"></iframe></div>
       <div class="thumb-card-info">
         <span class="thumb-card-id">${item.blindId}</span>
         <span class="thumb-card-q">${item.qName}</span>
@@ -164,7 +164,11 @@ export function togglePreviewCode() {
 
 export function submitPreviewScore() {
   const total = parseInt(document.getElementById('previewTotal').textContent) || 0;
-  if (total === 0) { toast('请先评分', 'ri-error-warning-line'); return; }
+  const v = parseInt(document.getElementById('scoreVisual').value);
+  const i = parseInt(document.getElementById('scoreInteract').value);
+  const c = parseInt(document.getElementById('scoreCode').value);
+  const cr = parseInt(document.getElementById('scoreCreative').value);
+  if (isNaN(v) && isNaN(i) && isNaN(c) && isNaN(cr)) { toast('请先评分', 'ri-error-warning-line'); return; }
   const note = document.getElementById('previewNote').value.trim();
   const item = thumbQueue[thumbIdx];
   const entry = S.entries.find(e => e.id === item.id);

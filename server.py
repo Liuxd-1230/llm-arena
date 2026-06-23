@@ -7,6 +7,7 @@ LLM Arena 本地服务器
 - 数据存在 data_storage/state.json，清浏览器缓存也不丢
 """
 
+import ipaddress
 import json
 import os
 import re
@@ -63,21 +64,39 @@ PRIVATE_NET_PREFIXES = (
 
 
 def _is_private_host(hostname):
-    """检查是否为内网地址"""
+    """检查是否为内网地址（使用 ipaddress 模块标准化判断）"""
     if not hostname:
         return True
     hostname = hostname.lower().strip("[]")
+    # 直接检查常见前缀
     for prefix in PRIVATE_NET_PREFIXES:
         if hostname.startswith(prefix) or hostname == prefix.rstrip("."):
             return True
+    # 检查 0.0.0.0 和 ::ffff: 映射地址
+    if hostname in ("0.0.0.0", "::", "::ffff:"):
+        return True
+    if hostname.startswith("::ffff:"):
+        return True
+    # 尝试用 ipaddress 模块解析
+    try:
+        ip = ipaddress.ip_address(hostname)
+        if ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_reserved or ip.is_multicast:
+            return True
+    except ValueError:
+        pass
     # 尝试 DNS 解析后检查
     try:
         addr = socket.getaddrinfo(hostname, None)
         for family, _, _, _, sockaddr in addr:
-            ip = sockaddr[0]
-            for prefix in PRIVATE_NET_PREFIXES:
-                if ip.startswith(prefix):
+            ip_str = sockaddr[0]
+            try:
+                ip = ipaddress.ip_address(ip_str)
+                if ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_reserved or ip.is_multicast:
                     return True
+            except ValueError:
+                for prefix in PRIVATE_NET_PREFIXES:
+                    if ip_str.startswith(prefix):
+                        return True
     except (socket.gaierror, OSError):
         pass
     return False
@@ -102,17 +121,11 @@ def _validate_endpoint(endpoint):
 
 
 def _check_auth(handler):
-    """验证 Bearer token"""
+    """验证 Bearer token（仅支持 Authorization header）"""
     auth = handler.headers.get("Authorization", "")
     if auth.startswith("Bearer "):
         token = auth[7:].strip()
         if token == API_TOKEN:
-            return True
-    # 也支持 query 参数
-    if "token=" in handler.path:
-        from urllib.parse import urlparse, parse_qs
-        qs = parse_qs(urlparse(handler.path).query)
-        if qs.get("token", [None])[0] == API_TOKEN:
             return True
     return False
 
@@ -260,8 +273,7 @@ class Handler(SimpleHTTPRequestHandler):
             req.add_header("Authorization", f"Bearer {api_key}")
             req.add_header("Content-Type", "application/json")
 
-            ctx = ssl.create_default_context()
-            with urllib.request.urlopen(req, timeout=10, context=ctx) as resp:
+            with urllib.request.urlopen(req, timeout=10, context=SSL_CTX) as resp:
                 data = json.loads(resp.read().decode("utf-8"))
 
             # 提取模型 ID 列表
@@ -450,7 +462,7 @@ if __name__ == "__main__":
 ║   Token 文件: {TOKEN_FILE}              ║
 ╚══════════════════════════════════════════╝
 """)
-    server = HTTPServer(("", PORT), Handler)
+    server = HTTPServer(("127.0.0.1", PORT), Handler)
     try:
         server.serve_forever()
     except KeyboardInterrupt:

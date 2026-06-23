@@ -15,6 +15,23 @@ export function escHtml(s) {
   return (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
+/**
+ * 转义字符串以安全用于 HTML 属性值（onclick="..." 等）
+ * 处理 \ ' " < > & \n \r \t 等特殊字符
+ */
+export function escapeAttr(s) {
+  return (s || '')
+    .replace(/\\/g, '\\\\')
+    .replace(/'/g, '&#39;')
+    .replace(/"/g, '&quot;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/&/g, '&amp;')
+    .replace(/\n/g, '&#10;')
+    .replace(/\r/g, '&#13;')
+    .replace(/\t/g, '&#9;');
+}
+
 export function escSrcdoc(s) {
   return (s || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;');
 }
@@ -214,15 +231,6 @@ export function runFuncCheck() {
   document.getElementById('funcModal').classList.add('show');
 }
 
-export function exportAll() {
-  const b = new Blob([JSON.stringify(S, null, 2)], { type: 'application/json' });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(b);
-  a.download = `llm-arena-${new Date().toISOString().slice(0, 10)}.json`;
-  a.click();
-  toast('已导出');
-}
-
 export function closeFuncModal() {
   document.getElementById('funcModal').classList.remove('show');
 }
@@ -249,8 +257,6 @@ export async function doReveal() {
 }
 
 // Subtle animation helpers - only animate new elements
-let lastAnimatedElements = new Set();
-
 export function animateElements(selector, animationClass = 'entrance-fade-up', stagger = true) {
   const elements = document.querySelectorAll(selector);
   const newElements = [];

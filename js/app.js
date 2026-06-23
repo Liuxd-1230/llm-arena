@@ -32,11 +32,10 @@ import { toast } from './components/toast.js';
 // Utils (clipboard, reveal modal, func check, export)
 import {
   copyText, fallbackCopy, copyFullPrompt, copyForLLMJudge, copyForLLMJudgeNew,
-  runFuncCheck, exportAll, closeFuncModal,
+  runFuncCheck, closeFuncModal,
   showRevealModal, closeRevealModal, doReveal,
   escHtml, escSrcdoc, shuffle, getDim, getDiff, isAutoDim, hasAutoQ, getLongDocForQuestion,
-  buildJudgePrompt,
-  animateElements, animateCards, addPremiumEffects
+  buildJudgePrompt
 } from './utils.js';
 
 // ============================================================
@@ -116,7 +115,6 @@ window.copyFullPrompt = copyFullPrompt;
 window.copyForLLMJudge = copyForLLMJudge;
 window.copyForLLMJudgeNew = copyForLLMJudgeNew;
 window.runFuncCheck = runFuncCheck;
-window.exportAll = exportAll;
 window.exportToFile = exportToFile;
 window.importFromFile = importFromFile;
 window.handleFileImport = async function(input) {
@@ -140,10 +138,6 @@ window.buildJudgePrompt = buildJudgePrompt;
 
 // Animation functions
 window.renderStats = renderStats;
-
-window.animateElements = animateElements;
-window.animateCards = animateCards;
-window.addPremiumEffects = addPremiumEffects;
 
 // ============================================================
 // Initialize

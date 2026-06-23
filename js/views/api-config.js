@@ -8,20 +8,26 @@ import { toast } from '../components/toast.js';
 
 const STORAGE_KEY = 'llm_arena_api_config';
 
+let _configCache = null;
+
 function loadConfig() {
+  if (_configCache) return _configCache;
   try {
     const raw = JSON.parse(localStorage.getItem(STORAGE_KEY));
     if (raw && Array.isArray(raw.profiles)) {
       // 兼容旧格式：如果没有 answerProfile/judgeProfile，初始化
       if (raw.answerProfile === undefined) raw.answerProfile = 0;
       if (raw.judgeProfile === undefined) raw.judgeProfile = raw.profiles.length > 1 ? 1 : 0;
+      _configCache = raw;
       return raw;
     }
   } catch (e) {}
-  return { profiles: [], activeProfile: 0, answerProfile: 0, judgeProfile: 0 };
+  _configCache = { profiles: [], activeProfile: 0, answerProfile: 0, judgeProfile: 0 };
+  return _configCache;
 }
 
 function saveConfig(cfg) {
+  _configCache = cfg;
   localStorage.setItem(STORAGE_KEY, JSON.stringify(cfg));
 }
 
@@ -372,7 +378,7 @@ function saveFormToProfile(cfg) {
   const endpoint = document.getElementById('apiCfgEndpoint')?.value?.trim();
   const apiKey = document.getElementById('apiCfgKey')?.value?.trim();
   const model = document.getElementById('apiCfgModel')?.value?.trim();
-  if (name) p.name = name;
+  p.name = name || p.name;
   if (endpoint) p.endpoint = endpoint;
   if (apiKey) p.api_key = apiKey;
   if (model) p.model = model;

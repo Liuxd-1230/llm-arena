@@ -78,6 +78,8 @@ export function submitBlindScore() {
   const note = document.getElementById('blindNoteInput').value.trim();
   if (isNaN(score)) { toast('请输入分数', 'ri-error-warning-line'); return; }
   const item = S.blindQueue[S.blindIdx];
+  const dm = getDiff(item.qDiff);
+  if (score < 0 || score > dm.max) { toast(`分数必须在 0-${dm.max} 之间`, 'ri-error-warning-line'); return; }
   const entry = S.entries.find(e => e.id === item.id);
   if (entry) {
     entry.score = score;
