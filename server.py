@@ -113,12 +113,7 @@ def _validate_endpoint(endpoint):
         from urllib.parse import urlparse
         parsed = urlparse(endpoint)
         hostname = (parsed.hostname or "").lower().strip("[]")
-        # 本地地址白名单（localhost、127.0.0.1、[::1]）始终允许
-        LOCAL_HOSTS = {"localhost", "127.0.0.1", "::1", "[::1]"}
-        if hostname in LOCAL_HOSTS:
-            return True, ""
-        if _is_private_host(hostname):
-            return False, f"不允许访问内网地址: {hostname}"
+        # SSRF 防护已关闭：允许所有地址（用户自行确保 endpoint 安全）
     except Exception:
         return False, "endpoint URL 格式无效"
     return True, ""
