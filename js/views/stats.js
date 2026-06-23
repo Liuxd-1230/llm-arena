@@ -6,6 +6,7 @@
 
 import { DIMS, DIFFS } from '../data/questions.js';
 import { S } from '../state.js';
+import { escHtml } from '../utils.js';
 
 // ==================== Helper Functions ====================
 
@@ -54,11 +55,7 @@ function scoreToBgColor(score) {
   return 'rgba(239,68,68,0.15)';
 }
 
-function escapeHtml(s) {
-  const d = document.createElement('div');
-  d.textContent = s;
-  return d.innerHTML;
-}
+// Uses escHtml from utils.js
 
 // ==================== Main Render ====================
 
@@ -163,7 +160,7 @@ function renderModelBarChart(models) {
     const color = isTop3 ? ['#6366f1', '#3b82f6', '#22c55e'][i] : '#6b7280';
     return `
       <text x="${labelW - 8}" y="${y + barH / 2 + 5}" text-anchor="end"
-        style="font-size:12px;fill:var(--text-primary);font-weight:${isTop3 ? '600' : '400'};">${escapeHtml(m.name)}</text>
+        style="font-size:12px;fill:var(--text-primary);font-weight:${isTop3 ? '600' : '400'};">${escHtml(m.name)}</text>
       <rect x="${labelW}" y="${y}" width="${w}" height="${barH}" rx="6" ry="6"
         fill="${color}" opacity="0.85">
         <animate attributeName="width" from="0" to="${w}" dur="0.6s" fill="freeze" begin="0.${i}s" />
@@ -257,7 +254,7 @@ function renderDiffTable(scored) {
   DIFFS.forEach(diff => {
     cells[diff.id] = {};
     models.forEach(m => {
-      const entries = scored.filter(e => e.diffId === diff.id && e.model === m);
+      const entries = scored.filter(e => e.qDiff === diff.id && e.model === m);
       cells[diff.id][m] = entries.length ? Math.round(entries.reduce((s, e) => s + e.score, 0) / entries.length) : null;
     });
   });
@@ -267,7 +264,7 @@ function renderDiffTable(scored) {
       <thead>
         <tr>
           <th style="text-align:left;padding:8px 12px;border-bottom:2px solid var(--border);color:var(--text-secondary);font-weight:600;">难度</th>
-          ${models.map(m => `<th style="text-align:center;padding:8px 12px;border-bottom:2px solid var(--border);color:var(--text-secondary);font-weight:600;white-space:nowrap;">${escapeHtml(m)}</th>`).join('')}
+          ${models.map(m => `<th style="text-align:center;padding:8px 12px;border-bottom:2px solid var(--border);color:var(--text-secondary);font-weight:600;white-space:nowrap;">${escHtml(m)}</th>`).join('')}
         </tr>
       </thead>
       <tbody>
@@ -295,18 +292,18 @@ function renderRecent(entries) {
   return `<div style="display:flex;flex-direction:column;gap:0;">
     ${recent.map((e, i) => {
       const dimInfo = DIMS.find(d => d.id === e.dimId);
-      const diffInfo = DIFFS.find(d => d.id === e.diffId);
+      const diffInfo = DIFFS.find(d => d.id === e.qDiff);
       const hasScore = e.score !== null && e.score !== undefined;
       const color = hasScore ? scoreToColor(e.score) : 'var(--text-muted)';
       return `<div style="display:flex;align-items:center;gap:12px;padding:10px 0;${i < recent.length - 1 ? 'border-bottom:1px solid var(--border);' : ''}">
         <div style="min-width:4px;height:4px;width:4px;border-radius:50%;background:${color};flex-shrink:0;"></div>
         <div style="flex:1;min-width:0;">
           <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
-            <span style="font-weight:500;font-size:13px;">${escapeHtml(e.model)}</span>
+            <span style="font-weight:500;font-size:13px;">${escHtml(e.model)}</span>
             <span style="font-size:11px;color:var(--text-tertiary);">${dimInfo ? dimInfo.name : e.dimId}</span>
             ${diffInfo ? `<span style="font-size:11px;">${diffInfo.emoji}</span>` : ''}
           </div>
-          <div style="font-size:12px;color:var(--text-tertiary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;">${escapeHtml(e.qName || '')}</div>
+          <div style="font-size:12px;color:var(--text-tertiary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;">${escHtml(e.qName || '')}</div>
         </div>
         <div style="text-align:right;flex-shrink:0;">
           ${hasScore ? `<span style="font-weight:600;font-size:14px;color:${color};">${e.score}</span>` : `<span style="font-size:12px;color:var(--text-muted);">未评分</span>`}

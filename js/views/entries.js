@@ -75,6 +75,7 @@ export function toggleModelGroup(model) {
 // Render a single entry row
 function renderEntryRow(e) {
   const dim = getDim(e.dimId);
+  if (!dim) return '';
   const isCode = dim.isCode;
   const hasScore = e.score !== null && e.score !== undefined;
   const scoreDisplay = [];

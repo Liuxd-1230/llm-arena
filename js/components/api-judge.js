@@ -9,7 +9,6 @@ import { toast } from './toast.js';
 import { renderSidebar } from './sidebar.js';
 import { render } from '../router.js';
 
-const API_CONFIG_KEY = 'llm_arena_api_config';
 
 // ==================== API 配置管理 ====================
 

@@ -39,7 +39,7 @@ export function addEntry() {
 
   // Auto-score if mode is auto AND question has auto-score
   if (S.submitMode === 'auto' && dim.autoScore && hasAutoQ(S.q.name)) {
-    const result = autoScore(answer, S.q.name);
+    const result = typeof autoScore === 'function' ? autoScore(answer, S.q.name) : null;
     if (result) {
       entry.score = result.total_score;
       entry.note = '自动评分';
