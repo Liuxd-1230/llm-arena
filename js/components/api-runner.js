@@ -245,7 +245,7 @@ function _createApiEntry(dimId, q, modelName, answer, thinking) {
     qName: q.name,
     qDiff: q.diff,
     prompt: q.prompt,
-    answer: stripCodeFence(answer),
+    answer: answer,
     thinking: thinking || '',
     score: null,
     note: 'API 自动答题',

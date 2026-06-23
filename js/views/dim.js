@@ -33,7 +33,7 @@ export function addEntry() {
   const entry = {
     id: S.nextId, blindId, model, dimId: S.dim,
     qName: S.q.name, qDiff: S.q.diff, prompt: S.q.prompt,
-    answer: stripCodeFence(cleanAnswer), thinking: thinking || '',
+    answer: cleanAnswer, thinking: thinking || '',
     score: null, note: '', autoScore: false
   };
   S.nextId++;
