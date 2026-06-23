@@ -5,7 +5,6 @@
 
 import { S, save } from '../state.js';
 import { render } from '../router.js';
-import { render } from '../router.js';
 import { renderSidebar } from '../components/sidebar.js';
 import { toast } from '../components/toast.js';
 import { getDim, getLongDocForQuestion } from '../utils.js';
