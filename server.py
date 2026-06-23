@@ -103,7 +103,7 @@ def _is_private_host(hostname):
 
 
 def _validate_endpoint(endpoint):
-    """校验 endpoint URL：只允许 http/https 公网地址"""
+    """校验 endpoint URL：允许 http/https 地址，本地地址白名单放行"""
     if not endpoint:
         return False, "endpoint 为空"
     if not (endpoint.startswith("http://") or endpoint.startswith("https://")):
@@ -112,7 +112,11 @@ def _validate_endpoint(endpoint):
     try:
         from urllib.parse import urlparse
         parsed = urlparse(endpoint)
-        hostname = parsed.hostname or ""
+        hostname = (parsed.hostname or "").lower().strip("[]")
+        # 本地地址白名单（localhost、127.0.0.1、[::1]）始终允许
+        LOCAL_HOSTS = {"localhost", "127.0.0.1", "::1", "[::1]"}
+        if hostname in LOCAL_HOSTS:
+            return True, ""
         if _is_private_host(hostname):
             return False, f"不允许访问内网地址: {hostname}"
     except Exception:
