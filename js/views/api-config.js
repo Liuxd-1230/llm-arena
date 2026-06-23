@@ -1,6 +1,6 @@
 /**
  * api-config.js — API 配置页面
- * 支持多 profile 的 LLM API 配置，测试连接，存储到 localStorage
+ * 支持多 profile 的 LLM API 配置，自动获取模型列表
  */
 
 import { S } from '../state.js';
@@ -9,7 +9,6 @@ import { toast } from '../components/toast.js';
 
 const STORAGE_KEY = 'llm_arena_api_config';
 
-/** 加载配置 */
 function loadConfig() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
@@ -18,29 +17,30 @@ function loadConfig() {
   return { profiles: [], activeProfile: 0 };
 }
 
-/** 保存配置 */
 function saveConfig(cfg) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(cfg));
 }
 
-/** 获取当前激活的 profile */
 export function getActiveProfile() {
   const cfg = loadConfig();
   if (cfg.profiles.length === 0) return null;
   return cfg.profiles[cfg.activeProfile] || cfg.profiles[0];
 }
 
-/** 获取所有 profile 名称 */
 export function getProfileNames() {
   return loadConfig().profiles.map(p => p.name);
 }
 
-/** 渲染 API 配置页面 */
+function esc(s) {
+  return (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
 export function renderApiConfig(el) {
   const cfg = loadConfig();
   const activeIdx = cfg.activeProfile || 0;
   const profiles = cfg.profiles;
   const current = profiles[activeIdx] || {};
+  const models = current.models || [];
 
   el.innerHTML = `
     <div class="sec-head">
@@ -82,13 +82,13 @@ export function renderApiConfig(el) {
       <div class="card-body">
         <div class="label">Profile 名称</div>
         <input type="text" class="input" id="apiCfgName" value="${esc(current.name || '')}"
-               placeholder="如 GPT-4o / Claude-3.5 / Qwen-2.5" style="margin-bottom:12px;">
+               placeholder="如 GPT-4o / DeepSeek / Qwen" style="margin-bottom:12px;">
 
         <div class="label">API Endpoint URL</div>
         <input type="text" class="input" id="apiCfgEndpoint" value="${esc(current.endpoint || '')}"
-               placeholder="如 https://api.openai.com 或 https://api.anthropic.com" style="margin-bottom:12px;">
+               placeholder="如 https://api.openai.com" style="margin-bottom:4px;">
         <div style="font-size:11px;color:var(--t4);margin-bottom:12px;">
-          无需填写 /v1/chat/completions，服务端会自动拼接。支持 OpenAI / DeepSeek / 通义千问 / Moonshot / Groq 等兼容接口。
+          无需填写 /v1/chat/completions，服务端自动拼接。支持 OpenAI / DeepSeek / 通义千问 / Moonshot / Groq 等。
         </div>
 
         <div class="label">API Key</div>
@@ -101,37 +101,28 @@ export function renderApiConfig(el) {
           </button>
         </div>
 
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:12px;">
-          <div>
-            <div class="label">模型名称</div>
-            <input type="text" class="input" id="apiCfgModel" value="${esc(current.model || '')}"
-                   placeholder="如 gpt-4o / claude-3-5-sonnet / qwen-plus">
-          </div>
-          <div>
-            <div class="label">Max Tokens</div>
-            <input type="number" class="input" id="apiCfgMaxTokens" value="${current.max_tokens || 2048}"
-                   min="1" max="128000">
-          </div>
-          <div>
-            <div class="label">Temperature</div>
-            <input type="number" class="input" id="apiCfgTemp" value="${current.temperature || 0.7}"
-                   min="0" max="2" step="0.1">
-          </div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
+          <button class="btn btn-outline btn-sm" onclick="window._apiConfig_fetchModels()">
+            <i class="ri-refresh-line"></i> 获取模型列表
+          </button>
+          <span id="apiModelStatus" style="font-size:11px;color:var(--t4);">输入 Endpoint 和 Key 后点击获取</span>
         </div>
 
-        <div style="display:flex;gap:8px;margin-top:16px;">
+        <div class="label">选择模型</div>
+        <select class="input" id="apiCfgModel" style="margin-bottom:16px;">
+          ${models.length > 0
+            ? models.map(m => `<option value="${esc(m)}" ${m === current.model ? 'selected' : ''}>${esc(m)}</option>`).join('')
+            : `<option value="${esc(current.model || '')}" selected>${esc(current.model || '请先获取模型列表')}</option>`
+          }
+        </select>
+
+        <div style="display:flex;gap:8px;">
           <button class="btn btn-primary" onclick="window._apiConfig_save()">
             <i class="ri-save-line"></i> 保存配置
           </button>
-          <button class="btn btn-outline" onclick="window._apiConfig_loadPreset('openai')">
-            <i class="ri-flashlight-line"></i> OpenAI 预设
-          </button>
-          <button class="btn btn-outline" onclick="window._apiConfig_loadPreset('deepseek')">
-            <i class="ri-flashlight-line"></i> DeepSeek 预设
-          </button>
-          <button class="btn btn-outline" onclick="window._apiConfig_loadPreset('qwen')">
-            <i class="ri-flashlight-line"></i> 通义千问预设
-          </button>
+          <button class="btn btn-outline" onclick="window._apiConfig_loadPreset('openai')">OpenAI</button>
+          <button class="btn btn-outline" onclick="window._apiConfig_loadPreset('deepseek')">DeepSeek</button>
+          <button class="btn btn-outline" onclick="window._apiConfig_loadPreset('qwen')">通义千问</button>
         </div>
       </div>
     </div>
@@ -152,10 +143,11 @@ export function renderApiConfig(el) {
         <div style="font-size:13px;font-weight:600;"><i class="ri-lightbulb-line" style="color:var(--am);"></i> 使用说明</div>
       </div>
       <div class="card-body" style="font-size:12px;color:var(--t3);line-height:1.8;">
-        <p>• API Key 仅保存在浏览器 localStorage，<strong style="color:var(--gn);">不会</strong>上传到服务器 state.json</p>
-        <p>• 服务端仅作为代理转发请求，避免浏览器 CORS 限制</p>
-        <p>• 在维度详情页点击「🤖 自动答题」即可让模型自动回答当前问题</p>
-        <p>• 支持 OpenAI、DeepSeek、通义千问、Moonshot、Groq 等 OpenAI 兼容接口</p>
+        <p>• API Key 仅保存在浏览器 localStorage，<strong style="color:var(--gn);">不会</strong>上传到服务器</p>
+        <p>• 填写 Endpoint 和 Key 后点击「获取模型列表」自动拉取可用模型</p>
+        <p>• 在维度详情页点击「🤖 自动答题」让模型自动回答</p>
+        <p>• 在记录列表点击「🤖 API评价」让 judge 模型自动评分</p>
+        <p>• 支持 OpenAI、DeepSeek、通义千问、Moonshot、Groq 等兼容接口</p>
       </div>
     </div>
   `;
@@ -163,13 +155,8 @@ export function renderApiConfig(el) {
 
 // ==================== 操作函数 ====================
 
-function esc(s) {
-  return (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-}
-
 window._apiConfig_switchProfile = function(idx) {
   const cfg = loadConfig();
-  // 先保存当前表单
   saveFormToProfile(cfg);
   cfg.activeProfile = idx;
   saveConfig(cfg);
@@ -179,15 +166,10 @@ window._apiConfig_switchProfile = function(idx) {
 window._apiConfig_addProfile = function() {
   const cfg = loadConfig();
   saveFormToProfile(cfg);
-  const newProfile = {
+  cfg.profiles.push({
     name: `Profile ${cfg.profiles.length + 1}`,
-    endpoint: '',
-    api_key: '',
-    model: '',
-    max_tokens: 2048,
-    temperature: 0.7
-  };
-  cfg.profiles.push(newProfile);
+    endpoint: '', api_key: '', model: '', models: []
+  });
   cfg.activeProfile = cfg.profiles.length - 1;
   saveConfig(cfg);
   renderApiConfig(document.getElementById('main'));
@@ -196,14 +178,9 @@ window._apiConfig_addProfile = function() {
 
 window._apiConfig_removeProfile = function(idx) {
   const cfg = loadConfig();
-  if (cfg.profiles.length <= 1) {
-    toast('至少保留一个 Profile', 'ri-error-warning-line');
-    return;
-  }
+  if (cfg.profiles.length <= 1) { toast('至少保留一个 Profile', 'ri-error-warning-line'); return; }
   cfg.profiles.splice(idx, 1);
-  if (cfg.activeProfile >= cfg.profiles.length) {
-    cfg.activeProfile = cfg.profiles.length - 1;
-  }
+  if (cfg.activeProfile >= cfg.profiles.length) cfg.activeProfile = cfg.profiles.length - 1;
   saveConfig(cfg);
   renderApiConfig(document.getElementById('main'));
   toast('已删除 Profile');
@@ -219,46 +196,94 @@ window._apiConfig_save = function() {
 window._apiConfig_toggleKeyVisibility = function() {
   const input = document.getElementById('apiCfgKey');
   const icon = document.getElementById('apiCfgKeyIcon');
-  if (input.type === 'password') {
-    input.type = 'text';
-    icon.className = 'ri-eye-off-line';
-  } else {
-    input.type = 'password';
-    icon.className = 'ri-eye-line';
-  }
+  if (input.type === 'password') { input.type = 'text'; icon.className = 'ri-eye-off-line'; }
+  else { input.type = 'password'; icon.className = 'ri-eye-line'; }
 };
 
 window._apiConfig_loadPreset = function(preset) {
   const presets = {
-    openai: {
-      endpoint: 'https://api.openai.com',
-      model: 'gpt-4o'
-    },
-    deepseek: {
-      endpoint: 'https://api.deepseek.com',
-      model: 'deepseek-chat'
-    },
-    qwen: {
-      endpoint: 'https://dashscope.aliyuncs.com/compatible-mode',
-      model: 'qwen-plus'
-    }
+    openai:   { endpoint: 'https://api.openai.com' },
+    deepseek: { endpoint: 'https://api.deepseek.com' },
+    qwen:     { endpoint: 'https://dashscope.aliyuncs.com/compatible-mode' }
   };
   const p = presets[preset];
   if (!p) return;
   const ep = document.getElementById('apiCfgEndpoint');
-  const md = document.getElementById('apiCfgModel');
   if (ep) ep.value = p.endpoint;
-  if (md) md.value = p.model;
-  toast(`已加载 ${preset} 预设，请填写 API Key`);
+  toast(`已加载 ${preset} 预设，请填写 API Key 后获取模型列表`);
 };
 
+// 获取模型列表
+window._apiConfig_fetchModels = async function() {
+  const endpoint = document.getElementById('apiCfgEndpoint')?.value?.trim();
+  const apiKey = document.getElementById('apiCfgKey')?.value?.trim();
+  const statusEl = document.getElementById('apiModelStatus');
+
+  if (!endpoint) { toast('请先填写 Endpoint', 'ri-error-warning-line'); return; }
+  if (!apiKey) { toast('请先填写 API Key', 'ri-error-warning-line'); return; }
+
+  statusEl.textContent = '正在获取...';
+  statusEl.style.color = 'var(--am)';
+
+  try {
+    const resp = await fetch('/api/models', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ endpoint, api_key: apiKey })
+    });
+    const data = await resp.json();
+
+    if (data.error) {
+      statusEl.textContent = '❌ ' + data.error;
+      statusEl.style.color = 'var(--rd)';
+      return;
+    }
+
+    const models = data.models || [];
+    if (models.length === 0) {
+      statusEl.textContent = '未获取到模型';
+      statusEl.style.color = 'var(--am)';
+      return;
+    }
+
+    // 保存模型列表到 profile
+    const cfg = loadConfig();
+    const idx = cfg.activeProfile || 0;
+    if (cfg.profiles[idx]) {
+      cfg.profiles[idx].models = models;
+      // 如果当前没有选模型，自动选第一个
+      if (!cfg.profiles[idx].model && models.length > 0) {
+        cfg.profiles[idx].model = models[0];
+      }
+      saveConfig(cfg);
+    }
+
+    // 更新下拉框
+    const select = document.getElementById('apiCfgModel');
+    const currentModel = select?.value || '';
+    if (select) {
+      select.innerHTML = models.map(m =>
+        `<option value="${esc(m)}" ${m === currentModel ? 'selected' : ''}>${esc(m)}</option>`
+      ).join('');
+    }
+
+    statusEl.textContent = `✅ 获取到 ${models.length} 个模型`;
+    statusEl.style.color = 'var(--gn)';
+    toast(`获取到 ${models.length} 个模型`);
+  } catch (e) {
+    statusEl.textContent = '❌ 请求失败: ' + e.message;
+    statusEl.style.color = 'var(--rd)';
+  }
+};
+
+// 测试连接
 window._apiConfig_test = async function() {
   const endpoint = document.getElementById('apiCfgEndpoint')?.value?.trim();
   const apiKey = document.getElementById('apiCfgKey')?.value?.trim();
   const model = document.getElementById('apiCfgModel')?.value?.trim();
 
   if (!endpoint || !apiKey || !model) {
-    toast('请先填写 Endpoint、API Key 和模型名称', 'ri-error-warning-line');
+    toast('请先填写 Endpoint、API Key 并选择模型', 'ri-error-warning-line');
     return;
   }
 
@@ -277,15 +302,11 @@ window._apiConfig_test = async function() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        endpoint,
-        api_key: apiKey,
-        model,
+        endpoint, api_key: apiKey, model,
         messages: [{ role: 'user', content: 'Say "Hello from LLM Arena!" in one sentence.' }],
-        max_tokens: 100,
-        temperature: 0.7
+        max_tokens: 100
       })
     });
-
     const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
     const data = await resp.json();
 
@@ -296,7 +317,6 @@ window._apiConfig_test = async function() {
       return;
     }
 
-    // 提取回复文本
     const reply = data.choices?.[0]?.message?.content || '(无内容)';
     statusDot.style.background = 'var(--gn)';
     statusDot.title = '连接成功';
@@ -318,13 +338,9 @@ function saveFormToProfile(cfg) {
   const endpoint = document.getElementById('apiCfgEndpoint')?.value?.trim();
   const apiKey = document.getElementById('apiCfgKey')?.value?.trim();
   const model = document.getElementById('apiCfgModel')?.value?.trim();
-  const maxTokens = parseInt(document.getElementById('apiCfgMaxTokens')?.value) || 2048;
-  const temp = parseFloat(document.getElementById('apiCfgTemp')?.value) || 0.7;
 
   if (name) profile.name = name;
   if (endpoint) profile.endpoint = endpoint;
   if (apiKey) profile.api_key = apiKey;
   if (model) profile.model = model;
-  profile.max_tokens = maxTokens;
-  profile.temperature = temp;
 }

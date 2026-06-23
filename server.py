@@ -44,6 +44,8 @@ class Handler(SimpleHTTPRequestHandler):
             self._handle_post_state()
         elif self.path == "/api/llm":
             self._handle_llm_proxy()
+        elif self.path == "/api/models":
+            self._handle_models()
         else:
             self.send_error(404)
 
@@ -74,6 +76,50 @@ class Handler(SimpleHTTPRequestHandler):
             self._json_response(200, json.dumps({"ok": True}))
         except json.JSONDecodeError as e:
             self._json_response(400, json.dumps({"error": f"Invalid JSON: {e}"}))
+        except Exception as e:
+            self._json_response(500, json.dumps({"error": str(e)}))
+
+    # ==================== /api/models ====================
+
+    def _handle_models(self):
+        """获取外部 API 的模型列表（GET /v1/models）"""
+        try:
+            length = int(self.headers.get("Content-Length", 0))
+            body = self.rfile.read(length).decode("utf-8")
+            req_data = json.loads(body)
+
+            endpoint = req_data.get("endpoint", "").rstrip("/")
+            api_key = req_data.get("api_key", "")
+
+            if not endpoint or not api_key:
+                self._json_response(400, json.dumps({"error": "缺少 endpoint 或 api_key"}))
+                return
+
+            # 拼接 /v1/models URL
+            if endpoint.endswith("/v1"):
+                url = endpoint + "/models"
+            elif "/v1/" in endpoint:
+                url = endpoint.rstrip("/") + "/models"
+            else:
+                url = endpoint.rstrip("/") + "/v1/models"
+
+            req = urllib.request.Request(url, method="GET")
+            req.add_header("Authorization", f"Bearer {api_key}")
+            req.add_header("Content-Type", "application/json")
+
+            ctx = ssl.create_default_context()
+            with urllib.request.urlopen(req, timeout=10, context=ctx) as resp:
+                data = json.loads(resp.read().decode("utf-8"))
+
+            # 提取模型 ID 列表
+            models = sorted([m.get("id", "") for m in data.get("data", []) if m.get("id")])
+            self._json_response(200, json.dumps({"models": models}))
+
+        except urllib.error.HTTPError as e:
+            err_body = e.read().decode("utf-8", errors="replace")
+            self._json_response(e.code, json.dumps({"error": f"API 返回 {e.code}: {err_body[:200]}"}))
+        except urllib.error.URLError as e:
+            self._json_response(502, json.dumps({"error": f"连接失败: {str(e.reason)}"}))
         except Exception as e:
             self._json_response(500, json.dumps({"error": str(e)}))
 

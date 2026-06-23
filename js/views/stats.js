@@ -149,7 +149,9 @@ function renderModelBarChart(models) {
   const maxScore = 100;
   const barH = 28;
   const gap = 10;
-  const labelW = 120;
+  // 动态计算标签宽度：最长模型名 × 8px + 余量，最少 140px
+  const longestName = models.reduce((max, m) => Math.max(max, m.name.length), 0);
+  const labelW = Math.max(140, longestName * 8 + 20);
   const barArea = 400;
   const totalW = labelW + barArea + 60;
   const totalH = models.length * (barH + gap) + 10;
@@ -177,7 +179,8 @@ function renderModelBarChart(models) {
 function renderDimChart(dimAvg) {
   const barH = 24;
   const gap = 10;
-  const labelW = 110;
+  const longestName = dimAvg.reduce((max, d) => Math.max(max, d.name.length), 0);
+  const labelW = Math.max(120, longestName * 14 + 20);
   const barArea = 320;
   const totalW = labelW + barArea + 60;
   const totalH = dimAvg.length * (barH + gap) + 10;
