@@ -134,6 +134,7 @@ export async function startApiRun(dimId, diff, qName) {
         api_key: profile.api_key,
         model: profile.model,
         messages: [{ role: 'user', content: fullPrompt }],
+        max_tokens: 16384,
         temperature: profile.temperature || 0.7,
         stream: true
       })
@@ -348,6 +349,7 @@ async function _runSingleQuestion(q, profile) {
       api_key: profile.api_key,
       model: profile.model,
       messages: [{ role: 'user', content: fullPrompt }],
+      max_tokens: 16384,
       temperature: profile.temperature || 0.7,
       stream: false
     })
