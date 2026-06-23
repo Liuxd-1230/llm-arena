@@ -8,7 +8,7 @@ import { render } from '../router.js';
 import { renderSidebar } from '../components/sidebar.js';
 import { toast } from '../components/toast.js';
 import { getDim, getLongDocForQuestion } from '../utils.js';
-import { getActiveProfile } from '../views/api-config.js';
+import { getAnswerProfile } from '../views/api-config.js';
 import { QS } from '../data/questions.js';
 
 /**
@@ -84,7 +84,7 @@ let _timerInterval = null;
  * @param {string} qName - 题目名称
  */
 export async function startApiRun(dimId, diff, qName) {
-  const profile = getActiveProfile();
+  const profile = getAnswerProfile();
   if (!profile) {
     toast('请先配置 API（侧边栏 → API 配置）', 'ri-error-warning-line');
     return;
@@ -267,7 +267,7 @@ window._apiRunner_cancel = function() {
  * @param {Array} questions - [{dimId, diff, qName}]
  */
 export async function startBatchRun(questions) {
-  const profile = getActiveProfile();
+  const profile = getAnswerProfile();
   if (!profile) {
     toast('请先配置 API（侧边栏 → API 配置）', 'ri-error-warning-line');
     return;

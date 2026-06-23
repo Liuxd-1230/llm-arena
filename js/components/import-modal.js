@@ -11,13 +11,7 @@ import { render } from '../router.js';
 
 export let importTargetEntryId = null;
 
-const API_CONFIG_KEY = 'llm_arena_api_config';
-
-function loadApiProfiles() {
-  try {
-    return JSON.parse(localStorage.getItem(API_CONFIG_KEY)) || [];
-  } catch { return []; }
-}
+import { getJudgeProfile } from '../views/api-config.js';
 
 export function openImportModal(entryId) {
   importTargetEntryId = entryId;
@@ -32,13 +26,13 @@ export function openImportModal(entryId) {
   document.getElementById('importManualNote').value = entry.note || '';
   document.getElementById('importJson').value = '';
 
-  // Populate AI judge profile selector
-  const profiles = loadApiProfiles();
+  // Show judge profile info
   const profileSelect = document.getElementById('importJudgeProfile');
   if (profileSelect) {
-    profileSelect.innerHTML = profiles.length === 0
-      ? '<option value="">⚠️ 无 API 配置</option>'
-      : profiles.map((p, i) => `<option value="${i}">${p.name} (${p.model})</option>`).join('');
+    const profile = getJudgeProfile();
+    profileSelect.innerHTML = profile
+      ? `<option value="0">${profile.name} — ${profile.model}</option>`
+      : '<option value="">⚠️ 未配置评价模型</option>';
   }
 
   setImportMode('json');
@@ -138,17 +132,9 @@ export function doImportScore() {
 // ==================== AI Judge tab ====================
 
 async function doImportJudgeScore(entry, dm) {
-  const profileSelect = document.getElementById('importJudgeProfile');
-  const profileIdx = parseInt(profileSelect.value);
-  if (isNaN(profileIdx)) {
-    toast('请选择 API Profile', 'ri-error-warning-line');
-    return;
-  }
-
-  const profiles = loadApiProfiles();
-  const profile = profiles[profileIdx];
+  const profile = getJudgeProfile();
   if (!profile) {
-    toast('无效的 Profile', 'ri-error-warning-line');
+    toast('请先配置评价模型（API 配置页面）', 'ri-error-warning-line');
     return;
   }
 

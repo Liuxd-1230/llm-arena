@@ -13,15 +13,7 @@ const API_CONFIG_KEY = 'llm_arena_api_config';
 
 // ==================== API 配置管理 ====================
 
-function loadApiProfiles() {
-  try {
-    return JSON.parse(localStorage.getItem(API_CONFIG_KEY)) || [];
-  } catch { return []; }
-}
-
-function saveApiProfiles(profiles) {
-  localStorage.setItem(API_CONFIG_KEY, JSON.stringify(profiles));
-}
+import { getJudgeProfile } from '../views/api-config.js';
 
 // ==================== JSON 解析 ====================
 
@@ -95,12 +87,11 @@ export async function startApiJudge(entryId, profile = null) {
   if (!entry.answer) { toast('该记录无回答内容', 'ri-error-warning-line'); return; }
 
   if (!profile) {
-    const profiles = loadApiProfiles();
-    if (profiles.length === 0) {
+    profile = getJudgeProfile();
+    if (!profile) {
       toast('请先配置 API（在设置中添加 API Profile）', 'ri-error-warning-line');
       return;
     }
-    profile = profiles[0];
   }
 
   const judgePrompt = buildJudgePrompt(entry.prompt, entry.answer, entry.qName);
@@ -188,13 +179,11 @@ export async function startBatchJudge(entryIds) {
     return;
   }
 
-  const profiles = loadApiProfiles();
-  if (profiles.length === 0) {
+  const profile = getJudgeProfile();
+  if (!profile) {
     toast('请先配置 API（在设置中添加 API Profile）', 'ri-error-warning-line');
     return;
   }
-
-  const profile = profiles[0];
   const total = entryIds.length;
   let successCount = 0;
   let failCount = 0;
@@ -274,7 +263,7 @@ export async function startBatchJudge(entryIds) {
 // ==================== Judge 配置弹窗 ====================
 
 export function openJudgeConfigModal(preselectedEntryIds = null) {
-  const profiles = loadApiProfiles();
+  const profile = getJudgeProfile();
   const unscoredEntries = S.entries.filter(e => e.answer && !e.llmScore);
   const allScoredEntries = S.entries.filter(e => e.answer);
 
@@ -286,7 +275,7 @@ export function openJudgeConfigModal(preselectedEntryIds = null) {
     modal.innerHTML = `
       <div class="modal-box modal-classical" style="max-width:720px;">
         <h3><i class="ri-robot-line"></i> AI 自动评价</h3>
-        <p>选择 Judge 模型和要评价的记录，系统将自动发送评分请求。</p>
+        <p>使用配置的评价模型自动评分。可在「API 配置」中切换。</p>
         <div id="judgeConfigContent"></div>
         <div class="modal-foot">
           <button class="btn btn-outline" onclick="closeJudgeConfigModal()">取消</button>
@@ -297,26 +286,17 @@ export function openJudgeConfigModal(preselectedEntryIds = null) {
     document.body.appendChild(modal);
   }
 
-  // Render config content
   const content = document.getElementById('judgeConfigContent');
-  const profileOptions = profiles.map((p, i) =>
-    `<option value="${i}">${escHtml(p.name)} (${escHtml(p.model)} @ ${escHtml(p.endpoint)})</option>`
-  ).join('');
 
   const entriesToShow = preselectedEntryIds
     ? allScoredEntries.filter(e => preselectedEntryIds.includes(e.id))
     : unscoredEntries.length > 0 ? unscoredEntries : allScoredEntries;
 
   content.innerHTML = `
-    <div style="margin-bottom:16px;">
-      <div class="label">Judge API Profile</div>
-      <select id="judgeProfileSelect" class="input" style="width:100%;">
-        ${profiles.length === 0
-          ? '<option value="">⚠️ 无 API 配置，请先在设置中添加</option>'
-          : profileOptions}
-      </select>
-      <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">
-        推荐使用与被测模型不同的强模型作为 Judge
+    <div style="margin-bottom:16px;padding:12px;background:var(--bg-tertiary);border:1px solid var(--border);border-radius:var(--r8);">
+      <div style="font-size:12px;color:var(--text-tertiary);margin-bottom:4px;">评价模型（在 API 配置中修改）</div>
+      <div style="font-size:14px;font-weight:600;color:var(--accent);">
+        ${profile ? `${escHtml(profile.name)} — ${escHtml(profile.model)}` : '⚠️ 未配置，请先添加 API'}
       </div>
     </div>
     <div style="margin-bottom:16px;">
@@ -357,17 +337,9 @@ window.toggleJudgeSelectAll = function() {
 };
 
 window.doStartJudgeFromModal = async function() {
-  const profileSelect = document.getElementById('judgeProfileSelect');
-  const profileIdx = parseInt(profileSelect.value);
-  if (isNaN(profileIdx)) {
-    toast('请选择 API Profile', 'ri-error-warning-line');
-    return;
-  }
-
-  const profiles = loadApiProfiles();
-  const profile = profiles[profileIdx];
+  const profile = getJudgeProfile();
   if (!profile) {
-    toast('无效的 Profile', 'ri-error-warning-line');
+    toast('请先配置评价模型（API 配置页面）', 'ri-error-warning-line');
     return;
   }
 
