@@ -5,7 +5,7 @@
 
 import { DIMS, QS, DIFFS } from '../data/questions.js';
 import { S, save } from '../state.js';
-import { getDim, getDiff, hasAutoQ, getLongDocForQuestion } from '../utils.js';
+import { getDim, getDiff, hasAutoQ, getLongDocForQuestion, stripCodeFence } from '../utils.js';
 import { toast } from '../components/toast.js';
 import { renderSidebar } from '../components/sidebar.js';
 import { render } from '../router.js';
@@ -33,7 +33,7 @@ export function addEntry() {
   const entry = {
     id: S.nextId, blindId, model, dimId: S.dim,
     qName: S.q.name, qDiff: S.q.diff, prompt: S.q.prompt,
-    answer, score: null, note: '', autoScore: false
+    answer: stripCodeFence(answer), score: null, note: '', autoScore: false
   };
   S.nextId++;
 

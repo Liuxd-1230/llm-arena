@@ -4,7 +4,7 @@
  */
 
 import { S, save } from '../state.js';
-import { getDim, getDiff, shuffle } from '../utils.js';
+import { getDim, getDiff, shuffle, stripCodeFence } from '../utils.js';
 import { toast } from './toast.js';
 import { renderSidebar } from './sidebar.js';
 import { render } from '../router.js';
@@ -31,7 +31,7 @@ export function renderThumbGrid() {
     const dm = getDiff(item.qDiff);
     const scored = item.score !== null && item.score !== undefined;
     return `<div class="thumb-card ${scored ? 'thumb-card-scored' : ''}" ${scored ? `data-score="${item.score}分"` : ''} onclick="event.stopPropagation();openPreview(${idx})" style="cursor:pointer;">
-      <div class="thumb-frame-wrap"><iframe sandbox="" srcdoc="${escSrcdoc(item.answer)}" loading="lazy"></iframe></div>
+      <div class="thumb-frame-wrap"><iframe sandbox="" srcdoc="${escSrcdoc(stripCodeFence(item.answer))}" loading="lazy"></iframe></div>
       <div class="thumb-card-info">
         <span class="thumb-card-id">${item.blindId}</span>
         <span class="thumb-card-q">${item.qName}</span>
@@ -65,7 +65,7 @@ export function openPreview(idx) {
   document.getElementById('previewTitle').innerHTML = `<i class="${dim.icon}" style="color:${dim.color}"></i> ${item.qName}`;
   document.getElementById('previewBlindId').textContent = item.blindId;
   document.getElementById('previewProgress').textContent = `${idx + 1} / ${thumbQueue.length}`;
-  document.getElementById('previewFrame').srcdoc = item.answer;
+  document.getElementById('previewFrame').srcdoc = stripCodeFence(item.answer);
   document.getElementById('previewCodePre').textContent = item.answer;
   document.getElementById('previewCodeArea').style.display = 'none';
   previewCodeVisible = false;

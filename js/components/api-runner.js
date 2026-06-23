@@ -7,7 +7,7 @@ import { S, save } from '../state.js';
 import { render } from '../router.js';
 import { renderSidebar } from '../components/sidebar.js';
 import { toast } from '../components/toast.js';
-import { getDim, getLongDocForQuestion } from '../utils.js';
+import { getDim, getLongDocForQuestion, stripCodeFence } from '../utils.js';
 import { getAnswerProfile } from '../views/api-config.js';
 import { QS } from '../data/questions.js';
 
@@ -227,7 +227,7 @@ function _createApiEntry(dimId, q, modelName, answer) {
     qName: q.name,
     qDiff: q.diff,
     prompt: q.prompt,
-    answer,
+    answer: stripCodeFence(answer),
     score: null,
     note: 'API 自动答题',
     autoScore: false

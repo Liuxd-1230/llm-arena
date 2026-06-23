@@ -4,7 +4,7 @@
  */
 
 import { S } from '../state.js';
-import { getDim, isAutoDim, escSrcdoc, escHtml } from '../utils.js';
+import { getDim, isAutoDim, escSrcdoc, escHtml, stripCodeFence } from '../utils.js';
 
 // 视图模式：flat（平铺）| group（按模型分组）
 let viewMode = 'group';
@@ -40,7 +40,7 @@ export function openEntryPreview(id) {
       </div>
     </div>
     <div style="flex:1;position:relative;overflow:hidden;">
-      <iframe style="width:100%;height:100%;border:none;" srcdoc="${escSrcdoc(entry.answer)}"></iframe>
+      <iframe style="width:100%;height:100%;border:none;" srcdoc="${escSrcdoc(stripCodeFence(entry.answer))}"></iframe>
       <div id="entryPreviewCode" style="display:none;position:absolute;inset:0;background:var(--bg-primary);z-index:1;overflow:auto;padding:20px;">
         <pre style="font-family:var(--mono);font-size:12px;line-height:1.6;color:var(--text-secondary);white-space:pre-wrap;">${escHtml(entry.answer)}</pre>
       </div>

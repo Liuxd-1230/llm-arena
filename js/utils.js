@@ -19,6 +19,17 @@ export function escSrcdoc(s) {
   return (s || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;');
 }
 
+/**
+ * 剥掉 LLM 输出的 markdown 代码包裹
+ * ```html ... ``` 或 ``` ... ``` → 取里面的内容
+ */
+export function stripCodeFence(s) {
+  if (!s) return s;
+  // 匹配 ```html\n...\n``` 或 ```\n...\n```
+  const m = s.match(/^```(?:html|HTML)?\s*\n([\s\S]*?)\n```$/);
+  return m ? m[1].trim() : s.trim();
+}
+
 export function shuffle(a) {
   for (let i = a.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));

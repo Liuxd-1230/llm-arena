@@ -4,7 +4,7 @@
  */
 
 import { S, save } from '../state.js';
-import { getDim, getDiff, getLongDocForQuestion, escHtml, shuffle } from '../utils.js';
+import { getDim, getDiff, getLongDocForQuestion, escHtml, shuffle, stripCodeFence } from '../utils.js';
 import { toast } from './toast.js';
 import { renderSidebar } from './sidebar.js';
 import { render, showView } from '../router.js';
@@ -41,7 +41,7 @@ export function showBlindItem() {
     frame.style.display = 'block';
     const doc = frame.contentDocument || frame.contentWindow.document;
     doc.open();
-    doc.write(item.answer);
+    doc.write(stripCodeFence(item.answer));
     doc.close();
     document.getElementById('btnToggleCode').style.display = '';
     document.getElementById('blindCodeArea').classList.remove('show');
