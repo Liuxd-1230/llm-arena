@@ -364,7 +364,7 @@ class Handler(SimpleHTTPRequestHandler):
     def _handle_normal_response(self, req):
         """非流式请求：转发并返回完整响应"""
         try:
-            resp = urllib.request.urlopen(req, timeout=600, context=SSL_CTX)
+            resp = urllib.request.urlopen(req, timeout=None, context=SSL_CTX)
             result = resp.read().decode("utf-8")
             status = resp.getcode()
             # 回传上游的状态码和内容类型
@@ -394,7 +394,7 @@ class Handler(SimpleHTTPRequestHandler):
     def _handle_streaming_response(self, req):
         """流式请求：SSE 透传"""
         try:
-            resp = urllib.request.urlopen(req, timeout=600, context=SSL_CTX)
+            resp = urllib.request.urlopen(req, timeout=None, context=SSL_CTX)
             self.send_response(200)
             self.send_header("Content-Type", "text/event-stream; charset=utf-8")
             self.send_header("Cache-Control", "no-cache")
