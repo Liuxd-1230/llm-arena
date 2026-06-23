@@ -308,7 +308,7 @@ class Handler(SimpleHTTPRequestHandler):
             api_key = req_data.get("api_key", "")
             model = req_data.get("model", "")
             messages = req_data.get("messages", [])
-            max_tokens = req_data.get("max_tokens", 2048)
+            max_tokens = req_data.get("max_tokens")  # 不设默认值，由 API 自行决定
             temperature = req_data.get("temperature", 0.7)
             stream = req_data.get("stream", False)
 
@@ -339,10 +339,11 @@ class Handler(SimpleHTTPRequestHandler):
             payload = {
                 "model": model,
                 "messages": messages,
-                "max_tokens": max_tokens,
                 "temperature": temperature,
                 "stream": stream
             }
+            if max_tokens is not None:
+                payload["max_tokens"] = max_tokens
 
             data = json.dumps(payload).encode("utf-8")
             req = urllib.request.Request(url, data=data, method="POST")
