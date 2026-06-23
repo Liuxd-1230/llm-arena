@@ -95,7 +95,7 @@ function renderEntryRow(e) {
       <button class="btn btn-ghost btn-xs" onclick="toggleAnswer(${e.id})" title="查看答案"><i class="ri-eye-line"></i></button>
       ${isCode ? `<button class="btn btn-ghost btn-xs" onclick="openEntryPreview(${e.id})" title="全屏预览"><i class="ri-fullscreen-line"></i></button>` : ''}
       <button class="btn btn-ghost btn-xs" onclick="copyForLLMJudge(${e.id})" title="复制给强模型评分"><i class="ri-robot-line"></i></button>
-      <button class="btn btn-ghost btn-xs" onclick="startApiJudge(${e.id})" title="API自动评价"><i class="ri-robot2-line"></i></button>
+      <button class="btn btn-ghost btn-xs" onclick="startApiJudge(${e.id})" title="API自动评价"><i class="ri-robot-2-line"></i></button>
       <button class="btn btn-ghost btn-xs" onclick="openImportModal(${e.id})" title="${hasScore ? '重新评分' : '导入评分'}"><i class="${hasScore ? 'ri-refresh-line' : 'ri-braces-line'}"></i></button>
       <button class="btn btn-ghost btn-xs" onclick="deleteEntry(${e.id})" title="删除"><i class="ri-delete-bin-line"></i></button>
     </div>
@@ -191,7 +191,7 @@ export function renderEntries(el) {
         <div class="tab ${viewMode === 'flat' ? 'active' : ''}" onclick="toggleEntriesView()"><i class="ri-list-unordered" style="margin-right:4px;"></i>平铺</div>
       </div>
       ${unscored.length > 0 ? `<button class="btn btn-primary" onclick="startBlind()"><i class="ri-play-line"></i> 盲测主观题 (${unscored.filter(e => !isAutoDim(e.dimId)).length})</button>` : ''}
-      ${S.entries.filter(e => e.answer && !e.llmScore).length > 0 ? `<button class="btn btn-outline" onclick="openJudgeConfigModal()"><i class="ri-robot2-line"></i> 批量API评价 (${S.entries.filter(e => e.answer && !e.llmScore).length})</button>` : ''}
+      ${S.entries.filter(e => e.answer && !e.llmScore).length > 0 ? `<button class="btn btn-outline" onclick="openJudgeConfigModal()"><i class="ri-robot-2-line"></i> 批量API评价 (${S.entries.filter(e => e.answer && !e.llmScore).length})</button>` : ''}
     </div>
   </div>
   ${S.entries.length === 0 ? '<div style="text-align:center;padding:60px 0;color:var(--text-muted);"><i class="ri-inbox-line" style="font-size:32px;display:block;margin-bottom:12px;"></i>暂无数据</div>' : ''}

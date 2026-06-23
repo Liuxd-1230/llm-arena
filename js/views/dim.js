@@ -141,7 +141,7 @@ export function renderCollectPanel() {
             <span style="font-size:12px;color:var(--t3);">${e.qName}</span>
             <span style="margin-left:auto;font-size:12px;">${scoreDisplay.join(' ')}</span>
             <button class="btn btn-ghost btn-xs" onclick="event.stopPropagation();copyForLLMJudge(${e.id})" title="复制Prompt给强模型"><i class="ri-robot-line"></i></button>
-            ${!e.llmScore && e.answer ? `<button class="btn btn-ghost btn-xs" onclick="event.stopPropagation();startApiJudge(${e.id})" title="API自动评价"><i class="ri-robot2-line"></i></button>` : ''}
+            ${!e.llmScore && e.answer ? `<button class="btn btn-ghost btn-xs" onclick="event.stopPropagation();startApiJudge(${e.id})" title="API自动评价"><i class="ri-robot-2-line"></i></button>` : ''}
             <button class="btn btn-ghost btn-xs" onclick="event.stopPropagation();openImportModal(${e.id})" title="导入强模型评分"><i class="ri-braces-line"></i></button>
             <button class="btn btn-ghost btn-xs" onclick="event.stopPropagation();deleteEntry(${e.id})" title="删除"><i class="ri-delete-bin-line"></i></button>
           </div>
