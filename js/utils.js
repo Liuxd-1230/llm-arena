@@ -39,14 +39,22 @@ export function escSrcdoc(s) {
 /**
  * 剥掉 LLM 输出的 markdown 代码包裹
  * ```html ... ``` 或 ``` ... ``` → 取里面的内容
- * 支持：前后空白、大小写 HTML、末尾多余换行
+ * 支持：前后空白、任意大小写语言标签(html/HTML/HtMl/css/js等)、
+ *       末尾多余换行、缺少结尾围栏、结尾围栏前无换行
  */
 export function stripCodeFence(s) {
   if (!s) return s;
   s = s.trim();
-  // 匹配 ```html\n...\n``` 或 ```\n...\n``` (允许前后空白)
-  const m = s.match(/^```(?:html|HTML)?[ \t]*\r?\n([\s\S]*?)\r?\n```[ \t]*$/);
-  return m ? m[1].trim() : s;
+  // 匹配完整代码围栏: ```[lang]\n[content]\n```
+  // - [ \t]*(?:\w+)?  允许空格和任意语言标签(大小写不敏感)
+  // - (?:\r?\n)?      开头围栏后换行可选
+  // - \r?\n?          结尾围栏前换行可选
+  const m = s.match(/^```[ \t]*(?:\w+)?[ \t]*(?:\r?\n)?([\s\S]*?)\r?\n?[ \t]*```[ \t]*$/i);
+  if (m) return m[1].trim();
+  // 兜底: 只有开头围栏没有结尾围栏 → 剥掉开头
+  const m2 = s.match(/^```[ \t]*(?:\w+)?[ \t]*(?:\r?\n)?([\s\S]*)/i);
+  if (m2) return m2[1].trim();
+  return s;
 }
 
 /**
