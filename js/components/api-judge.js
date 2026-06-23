@@ -105,7 +105,6 @@ export async function startApiJudge(entryId, profile = null) {
       api_key: profile.api_key,
       model: profile.model,
       messages: [{ role: 'user', content: judgePrompt }],
-      max_tokens: profile.max_tokens || 1024,
       temperature: profile.temperature || 0.3,
     };
 
@@ -214,7 +213,6 @@ export async function startBatchJudge(entryIds, profile = null) {
           api_key: profile.api_key,
           model: profile.model,
           messages: [{ role: 'user', content: judgePrompt }],
-          max_tokens: profile.max_tokens || 1024,
           temperature: profile.temperature || 0.3,
         }),
       });
