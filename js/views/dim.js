@@ -5,7 +5,7 @@
 
 import { DIMS, QS, DIFFS } from '../data/questions.js';
 import { S, save } from '../state.js';
-import { getDim, getDiff, hasAutoQ, getLongDocForQuestion, stripCodeFence } from '../utils.js';
+import { getDim, getDiff, hasAutoQ, getLongDocForQuestion, stripCodeFence, extractThinking } from '../utils.js';
 import { toast } from '../components/toast.js';
 import { renderSidebar } from '../components/sidebar.js';
 import { render } from '../router.js';
@@ -22,22 +22,25 @@ export function setSubmitMode(mode) {
 
 export function addEntry() {
   const model = document.getElementById('cModel')?.value?.trim();
-  const answer = document.getElementById('cAnswer')?.value?.trim();
+  const rawAnswer = document.getElementById('cAnswer')?.value?.trim();
   if (!model) { toast('请输入模型名称', 'ri-error-warning-line'); return; }
-  if (!answer) { toast('请粘贴模型回答', 'ri-error-warning-line'); return; }
+  if (!rawAnswer) { toast('请粘贴模型回答', 'ri-error-warning-line'); return; }
   if (!S.q || !S.dim) { toast('请先选择题目', 'ri-error-warning-line'); return; }
   const dim = getDim(S.dim);
+  // 提取思维链
+  const { thinking, answer: cleanAnswer } = extractThinking(rawAnswer);
   const blindId = '#' + String(S.nextId).padStart(3, '0');
   const entry = {
     id: S.nextId, blindId, model, dimId: S.dim,
     qName: S.q.name, qDiff: S.q.diff, prompt: S.q.prompt,
-    answer: stripCodeFence(answer), score: null, note: '', autoScore: false
+    answer: stripCodeFence(cleanAnswer), thinking: thinking || '',
+    score: null, note: '', autoScore: false
   };
   S.nextId++;
 
   // Auto-score if mode is auto AND question has auto-score
   if (S.submitMode === 'auto' && dim.autoScore && hasAutoQ(S.q.name)) {
-    const result = typeof autoScore === 'function' ? autoScore(answer, S.q.name) : null;
+    const result = typeof autoScore === 'function' ? autoScore(rawAnswer, S.q.name) : null;
     if (result) {
       entry.score = result.total_score;
       entry.note = '自动评分';

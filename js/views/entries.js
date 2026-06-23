@@ -39,7 +39,8 @@ export function openEntryPreview(id) {
         ${entry.score !== null && entry.score !== undefined ? `<span style="font-size:14px;font-weight:700;color:var(--accent);">${entry.score}分</span>` : ''}
       </div>
     </div>
-    <div style="flex:1;position:relative;overflow:hidden;">
+    <div style="flex:1;position:relative;overflow:auto;">
+      ${renderThinkingBubble(entry.thinking || '', 'entry-full')}
       <iframe style="width:100%;height:100%;border:none;" srcdoc="${escSrcdoc(stripCodeFence(entry.answer))}"></iframe>
       <div id="entryPreviewCode" style="display:none;position:absolute;inset:0;background:var(--bg-primary);z-index:1;overflow:auto;padding:20px;">
         <pre style="font-family:var(--mono);font-size:12px;line-height:1.6;color:var(--text-secondary);white-space:pre-wrap;">${escHtml(entry.answer)}</pre>
@@ -101,6 +102,7 @@ function renderEntryRow(e) {
       <button class="btn btn-ghost btn-xs" onclick="deleteEntry(${e.id})" title="删除"><i class="ri-delete-bin-line"></i></button>
     </div>
     <div id="answer-${e.id}" style="display:none;width:100%;margin-top:8px;padding:12px;background:var(--bg-tertiary);border-radius:var(--r8);max-height:300px;overflow:auto;">
+      ${renderThinkingBubble(e.thinking || '', `entry-${e.id}`)}
       <pre style="font-family:var(--mono);font-size:12px;line-height:1.6;color:var(--text-secondary);white-space:pre-wrap;">${escHtml(e.answer)}</pre>
     </div>
   </div>`;
