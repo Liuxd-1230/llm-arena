@@ -3,7 +3,7 @@
  * 通过 API 将 judge prompt 发送到 LLM 评分模型，自动解析并导入分数
  */
 
-import { S, save } from '../state.js';
+import { S, save, getAuthHeaders } from '../state.js';
 import { getDim, getDiff, buildJudgePrompt, escHtml } from '../utils.js';
 import { toast } from './toast.js';
 import { renderSidebar } from './sidebar.js';
@@ -109,9 +109,10 @@ export async function startApiJudge(entryId, profile = null) {
       temperature: profile.temperature || 0.3,
     };
 
+    const authHeaders = await getAuthHeaders();
     const resp = await fetch('/api/llm', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: authHeaders,
       body: JSON.stringify(body),
     });
 
@@ -172,16 +173,18 @@ export async function startApiJudge(entryId, profile = null) {
 
 // ==================== 批量评价 ====================
 
-export async function startBatchJudge(entryIds) {
+export async function startBatchJudge(entryIds, profile = null) {
   if (!entryIds || entryIds.length === 0) {
     toast('没有可评价的记录', 'ri-error-warning-line');
     return;
   }
 
-  const profile = getJudgeProfile();
   if (!profile) {
-    toast('请先配置 API（在设置中添加 API Profile）', 'ri-error-warning-line');
-    return;
+    profile = getJudgeProfile();
+    if (!profile) {
+      toast('请先配置 API（在设置中添加 API Profile）', 'ri-error-warning-line');
+      return;
+    }
   }
   const total = entryIds.length;
   let successCount = 0;
@@ -202,9 +205,10 @@ export async function startBatchJudge(entryIds) {
       const judgePrompt = buildJudgePrompt(entry.prompt, entry.answer, entry.qName);
       const entryDiff = getDiff(entry.qDiff);
 
+      const authHeaders = await getAuthHeaders();
       const resp = await fetch('/api/llm', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: authHeaders,
         body: JSON.stringify({
           endpoint: profile.endpoint,
           api_key: profile.api_key,
@@ -355,84 +359,9 @@ window.doStartJudgeFromModal = async function() {
   if (entryIds.length === 1) {
     await startApiJudge(entryIds[0], profile);
   } else {
-    await startBatchJudgeWithProfile(entryIds, profile);
+    await startBatchJudge(entryIds, profile);
   }
 };
-
-async function startBatchJudgeWithProfile(entryIds, profile) {
-  const total = entryIds.length;
-  let successCount = 0;
-  let failCount = 0;
-
-  for (let i = 0; i < total; i++) {
-    const entryId = entryIds[i];
-    const entry = S.entries.find(e => e.id === entryId);
-    if (!entry || !entry.answer) {
-      failCount++;
-      continue;
-    }
-
-    const progress = Math.round(((i) / total) * 100);
-    showJudgeProgress(`评价中 ${i + 1}/${total} · ${entry.blindId}...`, progress);
-
-    try {
-      const judgePrompt = buildJudgePrompt(entry.prompt, entry.answer, entry.qName);
-      const entryDiff = getDiff(entry.qDiff);
-
-      const resp = await fetch('/api/llm', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          endpoint: profile.endpoint,
-          api_key: profile.api_key,
-          model: profile.model,
-          messages: [{ role: 'user', content: judgePrompt }],
-          max_tokens: profile.max_tokens || 1024,
-          temperature: profile.temperature || 0.3,
-        }),
-      });
-
-      if (!resp.ok) {
-        const err = await resp.json().catch(() => ({ error: 'Unknown error' }));
-        throw new Error(err.error || `HTTP ${resp.status}`);
-      }
-
-      const result = await resp.json();
-      const content = result?.choices?.[0]?.message?.content || '';
-      if (!content) throw new Error('空回复');
-
-      const parsed = extractJsonFromResponse(content);
-      if (!parsed) {
-        entry.llmDetail = { raw_response: content };
-        entry.llmScore = null;
-        entry.note = 'AI评价(解析失败)';
-        failCount++;
-      } else {
-        const maxScore = entryDiff ? entryDiff.max : 100;
-        entry.llmScore = Math.min(parsed.total_score, maxScore);
-        entry.llmDetail = parsed;
-        entry.note = `AI评价 (${profile.model})`;
-        if (!entry.autoScore) entry.score = entry.llmScore;
-        else entry.note = '双轨评分';
-        successCount++;
-      }
-      save();
-    } catch (err) {
-      failCount++;
-      console.error(`[api-judge] Failed for entry ${entryId}:`, err);
-    }
-
-    if (i < total - 1) await new Promise(r => setTimeout(r, 300));
-  }
-
-  showJudgeProgress(`批量评价完成 ${successCount}/${total}`, 100);
-  await new Promise(r => setTimeout(r, 800));
-  hideJudgeProgress();
-
-  renderSidebar();
-  render();
-  toast(`批量评价完成: ${successCount}成功, ${failCount}失败`);
-}
 
 window.closeJudgeConfigModal = function() {
   const modal = document.getElementById('judgeConfigModal');

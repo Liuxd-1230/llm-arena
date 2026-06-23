@@ -4,11 +4,10 @@
  */
 
 import { S, save } from '../state.js';
-import { getDim, getDiff, shuffle, stripCodeFence } from '../utils.js';
+import { getDim, getDiff, shuffle, stripCodeFence, escSrcdoc, renderThinkingBubble } from '../utils.js';
 import { toast } from './toast.js';
 import { renderSidebar } from './sidebar.js';
 import { render } from '../router.js';
-import { startBlind } from './blind.js';
 
 export let thumbQueue = [];
 export let thumbIdx = 0;
@@ -41,20 +40,10 @@ export function renderThumbGrid() {
   }).join('');
 }
 
-function escSrcdoc(s) {
-  return (s || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;');
-}
-
 export function exitThumbView() {
   document.getElementById('thumbOverlay').classList.remove('show');
   renderSidebar();
   render();
-}
-
-export function switchToBlindFromThumb() {
-  exitThumbView();
-  const dimId = thumbQueue[0]?.dimId;
-  if (dimId) startBlind(dimId);
 }
 
 export function openPreview(idx) {
@@ -69,6 +58,12 @@ export function openPreview(idx) {
   document.getElementById('previewCodePre').textContent = item.answer;
   document.getElementById('previewCodeArea').style.display = 'none';
   previewCodeVisible = false;
+  
+  // 思维链气泡
+  const thinkingEl = document.getElementById('previewThinking');
+  if (thinkingEl) {
+    thinkingEl.innerHTML = renderThinkingBubble(item.thinking || '', 'preview');
+  }
   
   // Generate rubric content dynamically
   const rubric = document.getElementById('previewRubric');

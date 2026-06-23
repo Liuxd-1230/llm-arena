@@ -192,12 +192,13 @@
   --dim-frontend: #C49A6A;        /* 古铜金 */
 }
 
-/* === 全局主题切换过渡 === */
-*,
-*::before,
-*::after {
-  transition: background-color 0.3s ease, 
-              color 0.3s ease, 
+/* === 主题切换过渡（仅对需要的元素） === */
+.glass-card, .btn, .sidebar, .tabs, .tab-row, .tab, .tab-btn,
+.card, .card-header, .card-body, .input, .textarea, .modal-box,
+.toast, .nav, .diff-pill, .entry-item, .q-card, .dim-item,
+.theme-toggle, .thumb-card, .preview-rubric-item {
+  transition: background-color 0.3s ease,
+              color 0.3s ease,
               border-color 0.3s ease,
               box-shadow 0.3s ease;
 }
@@ -227,79 +228,6 @@ body::after {
   pointer-events: none;
   z-index: -1;
   opacity: 0.5;
-}
-
-/* === 玻璃质感卡片 === */
-.glass-card {
-  background: var(--glass-bg);
-  backdrop-filter: blur(var(--glass-blur));
-  -webkit-backdrop-filter: blur(var(--glass-blur));
-  border: 1px solid var(--glass-border);
-  border-radius: 12px;
-}
-
-/* === 古典装饰线 === */
-.ornament-line {
-  height: 2px;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    var(--accent) 20%,
-    var(--accent) 80%,
-    transparent
-  );
-  opacity: 0.3;
-}
-
-/* === 古典角标 === */
-.ornament-corner {
-  position: relative;
-}
-
-.ornament-corner::before,
-.ornament-corner::after {
-  content: '';
-  position: absolute;
-  width: 20px;
-  height: 20px;
-  border: 2px solid var(--accent);
-  opacity: 0.3;
-}
-
-.ornament-corner::before {
-  top: -4px;
-  left: -4px;
-  border-right: none;
-  border-bottom: none;
-}
-
-.ornament-corner::after {
-  bottom: -4px;
-  right: -4px;
-  border-left: none;
-  border-top: none;
-}
-
-/* === 柱式装饰（用于侧边栏） === */
-.column-ornament {
-  position: relative;
-}
-
-.column-ornament::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 0;
-  bottom: 0;
-  width: 3px;
-  background: linear-gradient(
-    180deg,
-    transparent,
-    var(--accent) 15%,
-    var(--accent) 85%,
-    transparent
-  );
-  opacity: 0.2;
 }
 
 /* === 主题切换按钮 === */
@@ -353,44 +281,3 @@ body::after {
   display: none;
 }
 
-/* === 希腊回纹装饰（Greek Key） === */
-.greek-key-border {
-  border-image: repeating-linear-gradient(
-    90deg,
-    var(--accent) 0px,
-    var(--accent) 8px,
-    transparent 8px,
-    transparent 12px,
-    var(--accent) 12px,
-    var(--accent) 16px,
-    transparent 16px,
-    transparent 20px
-  ) 2;
-  opacity: 0.2;
-}
-
-/* === 月桂叶装饰（用于标题） === */
-.laurel-title {
-  position: relative;
-  display: inline-block;
-  padding: 0 24px;
-}
-
-.laurel-title::before,
-.laurel-title::after {
-  content: '🌿';
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  font-size: 16px;
-  opacity: 0.6;
-}
-
-.laurel-title::before {
-  left: 0;
-}
-
-.laurel-title::after {
-  right: 0;
-  transform: translateY(-50%) scaleX(-1);
-}

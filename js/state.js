@@ -20,6 +20,24 @@ export let S = {
 // 是否有本地服务器（同源的 server.py）
 const HAS_SERVER = location.protocol === 'http:' || location.protocol === 'https:';
 
+// API Token（从服务器加载）
+let _apiToken = null;
+
+async function _getAuthHeaders() {
+  if (!_apiToken && HAS_SERVER) {
+    try {
+      const resp = await fetch('/api/token', { signal: AbortSignal.timeout(1000) });
+      if (resp.ok) {
+        const data = await resp.json();
+        _apiToken = data.token;
+      }
+    } catch {}
+  }
+  const headers = { 'Content-Type': 'application/json' };
+  if (_apiToken) headers['Authorization'] = `Bearer ${_apiToken}`;
+  return headers;
+}
+
 // ==================== localStorage 缓存 ====================
 function loadFromCache() {
   try {
@@ -49,7 +67,8 @@ function saveToCache() {
 async function loadFromServer() {
   if (!HAS_SERVER) return false;
   try {
-    const resp = await fetch('/api/state', { signal: AbortSignal.timeout(2000) });
+    const headers = await _getAuthHeaders();
+    const resp = await fetch('/api/state', { headers, signal: AbortSignal.timeout(2000) });
     if (!resp.ok) return false;
     const data = await resp.json();
     if (data && data.entries) {
@@ -71,9 +90,10 @@ async function loadFromServer() {
 async function saveToServer() {
   if (!HAS_SERVER) return;
   try {
+    const headers = await _getAuthHeaders();
     await fetch('/api/state', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers,
       body: JSON.stringify({
         entries: S.entries,
         nextId: S.nextId,
@@ -86,6 +106,11 @@ async function saveToServer() {
 }
 
 // ==================== 公开 API ====================
+
+/**
+ * 获取包含认证头的 headers 对象
+ */
+export { _getAuthHeaders as getAuthHeaders };
 
 /**
  * 保存状态（同时写服务器 + localStorage）
@@ -130,15 +155,19 @@ export function importFromFile(file) {
     reader.onload = () => {
       try {
         const data = JSON.parse(reader.result);
-        if (data.entries) {
-          S.entries = data.entries;
-          S.nextId = data.nextId || S.entries.length + 1;
-          S.revealed = data.revealed || false;
-          save();
-          resolve(S.entries.length);
-        } else {
-          reject(new Error('无效的备份文件'));
+        if (!data || typeof data !== 'object') {
+          reject(new Error('无效的备份文件：不是 JSON 对象'));
+          return;
         }
+        if (!Array.isArray(data.entries)) {
+          reject(new Error('无效的备份文件：entries 不是数组'));
+          return;
+        }
+        S.entries = data.entries;
+        S.nextId = data.nextId || S.entries.length + 1;
+        S.revealed = data.revealed || false;
+        save();
+        resolve(S.entries.length);
       } catch (e) {
         reject(e);
       }

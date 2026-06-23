@@ -4,7 +4,7 @@
  */
 
 import { S } from '../state.js';
-import { getDim, isAutoDim, escSrcdoc, escHtml, stripCodeFence } from '../utils.js';
+import { getDim, isAutoDim, escSrcdoc, escHtml, stripCodeFence, renderThinkingBubble } from '../utils.js';
 
 // 视图模式：flat（平铺）| group（按模型分组）
 let viewMode = 'group';

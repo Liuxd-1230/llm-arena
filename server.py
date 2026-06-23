@@ -9,8 +9,11 @@ LLM Arena 本地服务器
 
 import json
 import os
-import sys
+import re
+import secrets
+import socket
 import ssl
+import sys
 import urllib.request
 import urllib.error
 from http.server import HTTPServer, SimpleHTTPRequestHandler
@@ -20,18 +23,137 @@ PORT = int(sys.argv[1]) if len(sys.argv) > 1 else 8000
 DATA_DIR = Path(__file__).parent / "data_storage"
 DATA_FILE = DATA_DIR / "state.json"
 
+# 请求体大小上限 (10MB)
+MAX_BODY_SIZE = 10 * 1024 * 1024
+
 # 确保数据目录存在
 DATA_DIR.mkdir(exist_ok=True)
 
 # SSL context for outbound API calls
 SSL_CTX = ssl.create_default_context()
 
+# 启动时生成随机 API token，写入 .server-token 文件
+API_TOKEN = secrets.token_urlsafe(32)
+TOKEN_FILE = Path(__file__).parent / ".server-token"
+TOKEN_FILE.write_text(API_TOKEN, encoding="utf-8")
+os.chmod(TOKEN_FILE, 0o600)
+print(f"API Token: {API_TOKEN}")
+print(f"Token 文件: {TOKEN_FILE}")
+
+# 允许的 CORS 来源 (仅 localhost)
+ALLOWED_ORIGINS = {
+    "http://localhost",
+    "http://127.0.0.1",
+}
+# 动态添加带端口的来源
+ALLOWED_ORIGINS_FULL = set()
+for origin in list(ALLOWED_ORIGINS):
+    for port in [PORT, 8000, 8080, 3000, 5000]:
+        ALLOWED_ORIGINS_FULL.add(f"{origin}:{port}")
+    ALLOWED_ORIGINS_FULL.add(origin)  # 不带端口的也允许
+
+# 内网地址前缀（拒绝 SSRF）
+PRIVATE_NET_PREFIXES = (
+    "127.", "10.", "192.168.", "172.16.", "172.17.", "172.18.",
+    "172.19.", "172.20.", "172.21.", "172.22.", "172.23.",
+    "172.24.", "172.25.", "172.26.", "172.27.", "172.28.",
+    "172.29.", "172.30.", "172.31.", "0.", "169.254.",
+    "localhost", "::1", "fd", "fe80",
+)
+
+
+def _is_private_host(hostname):
+    """检查是否为内网地址"""
+    if not hostname:
+        return True
+    hostname = hostname.lower().strip("[]")
+    for prefix in PRIVATE_NET_PREFIXES:
+        if hostname.startswith(prefix) or hostname == prefix.rstrip("."):
+            return True
+    # 尝试 DNS 解析后检查
+    try:
+        addr = socket.getaddrinfo(hostname, None)
+        for family, _, _, _, sockaddr in addr:
+            ip = sockaddr[0]
+            for prefix in PRIVATE_NET_PREFIXES:
+                if ip.startswith(prefix):
+                    return True
+    except (socket.gaierror, OSError):
+        pass
+    return False
+
+
+def _validate_endpoint(endpoint):
+    """校验 endpoint URL：只允许 http/https 公网地址"""
+    if not endpoint:
+        return False, "endpoint 为空"
+    if not (endpoint.startswith("http://") or endpoint.startswith("https://")):
+        return False, "endpoint 必须以 http:// 或 https:// 开头"
+    # 提取 hostname
+    try:
+        from urllib.parse import urlparse
+        parsed = urlparse(endpoint)
+        hostname = parsed.hostname or ""
+        if _is_private_host(hostname):
+            return False, f"不允许访问内网地址: {hostname}"
+    except Exception:
+        return False, "endpoint URL 格式无效"
+    return True, ""
+
+
+def _check_auth(handler):
+    """验证 Bearer token"""
+    auth = handler.headers.get("Authorization", "")
+    if auth.startswith("Bearer "):
+        token = auth[7:].strip()
+        if token == API_TOKEN:
+            return True
+    # 也支持 query 参数
+    if "token=" in handler.path:
+        from urllib.parse import urlparse, parse_qs
+        qs = parse_qs(urlparse(handler.path).query)
+        if qs.get("token", [None])[0] == API_TOKEN:
+            return True
+    return False
+
 
 class Handler(SimpleHTTPRequestHandler):
     """处理静态文件 + /api/state + /api/llm 接口"""
 
+    def _cors_origin(self):
+        """返回匹配的 CORS origin，不匹配则返回 None"""
+        origin = self.headers.get("Origin", "")
+        if not origin:
+            return None
+        # 匹配 http://localhost:PORT 等
+        for allowed in ALLOWED_ORIGINS_FULL:
+            if origin == allowed:
+                return origin
+        # 宽松匹配 localhost 和 127.0.0.1（任意端口）
+        from urllib.parse import urlparse
+        try:
+            parsed = urlparse(origin)
+            host = parsed.hostname or ""
+            if host in ("localhost", "127.0.0.1"):
+                return origin
+        except Exception:
+            pass
+        return None
+
+    def _add_cors_headers(self):
+        """添加 CORS 头（仅一次）"""
+        origin = self._cors_origin()
+        if origin:
+            self.send_header("Access-Control-Allow-Origin", origin)
+
     def do_GET(self):
-        if self.path == "/api/state":
+        if self.path == "/api/token":
+            # 返回 token（CORS 已限制为 localhost，远程页面无法访问）
+            self._json_response(200, json.dumps({"token": API_TOKEN}))
+        elif self.path.startswith("/api/state"):
+            if not _check_auth(self):
+                self._json_response(401, json.dumps({"error": "未授权，请提供有效 token"}))
+                return
             self._handle_get_state()
         elif self.path == "/favicon.ico":
             self.send_response(204)
@@ -40,11 +162,20 @@ class Handler(SimpleHTTPRequestHandler):
             super().do_GET()
 
     def do_POST(self):
-        if self.path == "/api/state":
+        if self.path.startswith("/api/state"):
+            if not _check_auth(self):
+                self._json_response(401, json.dumps({"error": "未授权，请提供有效 token"}))
+                return
             self._handle_post_state()
         elif self.path == "/api/llm":
+            if not _check_auth(self):
+                self._json_response(401, json.dumps({"error": "未授权，请提供有效 token"}))
+                return
             self._handle_llm_proxy()
         elif self.path == "/api/models":
+            if not _check_auth(self):
+                self._json_response(401, json.dumps({"error": "未授权，请提供有效 token"}))
+                return
             self._handle_models()
         else:
             self.send_error(404)
@@ -67,9 +198,22 @@ class Handler(SimpleHTTPRequestHandler):
         """保存 state JSON 到本地文件"""
         try:
             length = int(self.headers.get("Content-Length", 0))
+            if length > MAX_BODY_SIZE:
+                self._json_response(413, json.dumps({"error": f"请求体过大，上限 {MAX_BODY_SIZE // (1024*1024)}MB"}))
+                return
             body = self.rfile.read(length).decode("utf-8")
             # 验证是合法 JSON
-            json.loads(body)
+            data = json.loads(body)
+            # 校验 entries 字段
+            if not isinstance(data, dict):
+                self._json_response(400, json.dumps({"error": "请求体必须是 JSON 对象"}))
+                return
+            if "entries" not in data:
+                self._json_response(400, json.dumps({"error": "缺少 entries 字段"}))
+                return
+            if not isinstance(data["entries"], list):
+                self._json_response(400, json.dumps({"error": "entries 必须是数组"}))
+                return
             DATA_DIR.mkdir(exist_ok=True)
             with open(DATA_FILE, "w", encoding="utf-8") as f:
                 f.write(body)
@@ -85,6 +229,9 @@ class Handler(SimpleHTTPRequestHandler):
         """获取外部 API 的模型列表（GET /v1/models）"""
         try:
             length = int(self.headers.get("Content-Length", 0))
+            if length > MAX_BODY_SIZE:
+                self._json_response(413, json.dumps({"error": f"请求体过大，上限 {MAX_BODY_SIZE // (1024*1024)}MB"}))
+                return
             body = self.rfile.read(length).decode("utf-8")
             req_data = json.loads(body)
 
@@ -93,6 +240,12 @@ class Handler(SimpleHTTPRequestHandler):
 
             if not endpoint or not api_key:
                 self._json_response(400, json.dumps({"error": "缺少 endpoint 或 api_key"}))
+                return
+
+            # endpoint 白名单校验
+            ok, err = _validate_endpoint(endpoint)
+            if not ok:
+                self._json_response(403, json.dumps({"error": err}))
                 return
 
             # 拼接 /v1/models URL
@@ -129,6 +282,9 @@ class Handler(SimpleHTTPRequestHandler):
         """代理转发到外部 OpenAI 兼容 API（支持流式和非流式）"""
         try:
             length = int(self.headers.get("Content-Length", 0))
+            if length > MAX_BODY_SIZE:
+                self._json_response(413, json.dumps({"error": f"请求体过大，上限 {MAX_BODY_SIZE // (1024*1024)}MB"}))
+                return
             body = self.rfile.read(length).decode("utf-8")
             req_data = json.loads(body)
 
@@ -144,6 +300,12 @@ class Handler(SimpleHTTPRequestHandler):
                 self._json_response(400, json.dumps({
                     "error": "缺少 endpoint、api_key 或 model 参数"
                 }))
+                return
+
+            # endpoint 白名单校验
+            ok, err = _validate_endpoint(endpoint)
+            if not ok:
+                self._json_response(403, json.dumps({"error": err}))
                 return
 
             # 智能拼接 URL：如果 endpoint 已经以 /chat/completions 结尾就直接用
@@ -192,14 +354,14 @@ class Handler(SimpleHTTPRequestHandler):
             # 回传上游的状态码和内容类型
             self.send_response(status)
             self.send_header("Content-Type", "application/json; charset=utf-8")
-            self.send_header("Access-Control-Allow-Origin", "*")
+            self._add_cors_headers()
             self.end_headers()
             self.wfile.write(result.encode("utf-8"))
         except urllib.error.HTTPError as e:
             error_body = e.read().decode("utf-8", errors="replace")
             self.send_response(e.code)
             self.send_header("Content-Type", "application/json; charset=utf-8")
-            self.send_header("Access-Control-Allow-Origin", "*")
+            self._add_cors_headers()
             self.end_headers()
             self.wfile.write(json.dumps({
                 "error": f"API 返回 {e.code}: {error_body[:1000]}"
@@ -220,7 +382,7 @@ class Handler(SimpleHTTPRequestHandler):
             self.send_response(200)
             self.send_header("Content-Type", "text/event-stream; charset=utf-8")
             self.send_header("Cache-Control", "no-cache")
-            self.send_header("Access-Control-Allow-Origin", "*")
+            self._add_cors_headers()
             self.end_headers()
 
             for line in resp:
@@ -252,21 +414,20 @@ class Handler(SimpleHTTPRequestHandler):
     def _json_response(self, code, body):
         self.send_response(code)
         self.send_header("Content-Type", "application/json; charset=utf-8")
-        self.send_header("Access-Control-Allow-Origin", "*")
+        self._add_cors_headers()
         self.end_headers()
         self.wfile.write(body.encode("utf-8"))
 
     def do_OPTIONS(self):
         """CORS preflight"""
         self.send_response(200)
-        self.send_header("Access-Control-Allow-Origin", "*")
+        self._add_cors_headers()
         self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
-        self.send_header("Access-Control-Allow-Headers", "Content-Type")
+        self.send_header("Access-Control-Allow-Headers", "Content-Type, Authorization")
         self.end_headers()
 
     def end_headers(self):
-        """给所有响应加 CORS 头"""
-        self.send_header("Access-Control-Allow-Origin", "*")
+        """不自动添加 CORS 头（由 _add_cors_headers 按需添加）"""
         super().end_headers()
 
     def log_message(self, format, *args):
@@ -286,6 +447,7 @@ if __name__ == "__main__":
 ║   http://localhost:{PORT}                 ║
 ║   数据存储: {DATA_FILE}                  ║
 ║   LLM 代理: POST /api/llm               ║
+║   Token 文件: {TOKEN_FILE}              ║
 ╚══════════════════════════════════════════╝
 """)
     server = HTTPServer(("", PORT), Handler)

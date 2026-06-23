@@ -3,11 +3,11 @@
  * 发送问题到配置好的 LLM API，支持流式显示答案
  */
 
-import { S, save } from '../state.js';
+import { S, save, getAuthHeaders } from '../state.js';
 import { render } from '../router.js';
 import { renderSidebar } from '../components/sidebar.js';
 import { toast } from '../components/toast.js';
-import { getDim, getLongDocForQuestion, stripCodeFence } from '../utils.js';
+import { getDim, getLongDocForQuestion, stripCodeFence, extractThinking } from '../utils.js';
 import { getAnswerProfile } from '../views/api-config.js';
 import { QS } from '../data/questions.js';
 
@@ -124,9 +124,10 @@ export async function startApiRun(dimId, diff, qName) {
   statusEl.textContent = '正在连接...';
 
   try {
+    const authHeaders = await getAuthHeaders();
     const resp = await fetch('/api/llm', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: authHeaders,
       signal: controller.signal,
       body: JSON.stringify({
         endpoint: profile.endpoint,
@@ -150,6 +151,7 @@ export async function startApiRun(dimId, diff, qName) {
     const reader = resp.body.getReader();
     const decoder = new TextDecoder();
     let fullAnswer = '';
+    let fullThinking = '';
     let buffer = '';
 
     while (true) {
@@ -167,14 +169,22 @@ export async function startApiRun(dimId, diff, qName) {
 
         try {
           const chunk = JSON.parse(dataStr);
-          const delta = chunk.choices?.[0]?.delta?.content;
-          if (delta) {
-            fullAnswer += delta;
-            answerEl.textContent = fullAnswer;
-            // 自动滚动到底部
-            const contentEl = document.getElementById('apiRunnerContent');
-            if (contentEl) contentEl.scrollTop = contentEl.scrollHeight;
+          const delta = chunk.choices?.[0]?.delta;
+          // DeepSeek 风格：reasoning_content 字段
+          if (delta?.reasoning_content) {
+            fullThinking += delta.reasoning_content;
           }
+          // 通用 content 字段（可能含 <think> 标签）
+          if (delta?.content) {
+            fullAnswer += delta.content;
+          }
+          // 实时显示
+          const displayText = fullThinking
+            ? `💭 思考中...\n${fullThinking.slice(-200)}\n\n---\n${fullAnswer}`
+            : fullAnswer;
+          answerEl.textContent = displayText;
+          const contentEl = document.getElementById('apiRunnerContent');
+          if (contentEl) contentEl.scrollTop = contentEl.scrollHeight;
         } catch (e) {
           // 忽略解析错误的行
         }
@@ -188,9 +198,18 @@ export async function startApiRun(dimId, diff, qName) {
     const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
     timerEl.textContent = elapsed + 's';
 
+    // 提取思维链（从 <think> 标签或 reasoning_content）
+    let thinking = fullThinking;
+    let cleanAnswer = fullAnswer;
+    if (!thinking) {
+      const extracted = extractThinking(fullAnswer);
+      thinking = extracted.thinking;
+      cleanAnswer = extracted.answer;
+    }
+
     // 自动创建 entry
-    if (fullAnswer.trim()) {
-      _createApiEntry(dimId, q, profile.model, fullAnswer.trim());
+    if (cleanAnswer.trim()) {
+      _createApiEntry(dimId, q, profile.model, cleanAnswer.trim(), thinking.trim());
       toast(`✅ ${q.name} 答题完成 (${elapsed}s)`);
     } else {
       toast('模型未返回有效回答', 'ri-error-warning-line');
@@ -217,7 +236,7 @@ export async function startApiRun(dimId, diff, qName) {
 /**
  * 创建 API 答题 entry
  */
-function _createApiEntry(dimId, q, modelName, answer) {
+function _createApiEntry(dimId, q, modelName, answer, thinking) {
   const blindId = '#' + String(S.nextId).padStart(3, '0');
   const entry = {
     id: S.nextId,
@@ -228,6 +247,7 @@ function _createApiEntry(dimId, q, modelName, answer) {
     qDiff: q.diff,
     prompt: q.prompt,
     answer: stripCodeFence(answer),
+    thinking: thinking || '',
     score: null,
     note: 'API 自动答题',
     autoScore: false
@@ -320,9 +340,10 @@ export async function startBatchRun(questions) {
 async function _runSingleQuestion(q, profile) {
   const fullPrompt = getFullPrompt(q);
 
+  const authHeaders = await getAuthHeaders();
   const resp = await fetch('/api/llm', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: authHeaders,
     body: JSON.stringify({
       endpoint: profile.endpoint,
       api_key: profile.api_key,
@@ -340,8 +361,19 @@ async function _runSingleQuestion(q, profile) {
   }
 
   const data = await resp.json();
-  const answer = data.choices?.[0]?.message?.content;
+  const msg = data.choices?.[0]?.message;
+  const answer = msg?.content;
   if (!answer) throw new Error('模型未返回回答');
 
-  _createApiEntry(q.dim, q, profile.model, answer.trim());
+  // 提取思维链
+  const thinking = msg?.reasoning_content || '';
+  let cleanAnswer = answer.trim();
+  let cleanThinking = thinking;
+  if (!cleanThinking) {
+    const extracted = extractThinking(cleanAnswer);
+    cleanThinking = extracted.thinking;
+    cleanAnswer = extracted.answer;
+  }
+
+  _createApiEntry(q.dim, q, profile.model, cleanAnswer, cleanThinking);
 }

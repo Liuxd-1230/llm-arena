@@ -10,8 +10,6 @@ import { toast } from '../components/toast.js';
 import { renderSidebar } from '../components/sidebar.js';
 import { render } from '../router.js';
 
-export let submitMode = 'auto';
-
 export function setSubmitMode(mode) {
   S.submitMode = mode;
   document.getElementById('modeAuto')?.classList.toggle('active', mode === 'auto');

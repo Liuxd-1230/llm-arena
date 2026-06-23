@@ -22,12 +22,48 @@ export function escSrcdoc(s) {
 /**
  * 剥掉 LLM 输出的 markdown 代码包裹
  * ```html ... ``` 或 ``` ... ``` → 取里面的内容
+ * 支持：前后空白、大小写 HTML、末尾多余换行
  */
 export function stripCodeFence(s) {
   if (!s) return s;
-  // 匹配 ```html\n...\n``` 或 ```\n...\n```
-  const m = s.match(/^```(?:html|HTML)?\s*\n([\s\S]*?)\n```$/);
-  return m ? m[1].trim() : s.trim();
+  s = s.trim();
+  // 匹配 ```html\n...\n``` 或 ```\n...\n``` (允许前后空白)
+  const m = s.match(/^```(?:html|HTML)?[ \t]*\r?\n([\s\S]*?)\r?\n```[ \t]*$/);
+  return m ? m[1].trim() : s;
+}
+
+/**
+ * 从 LLM 输出中提取 <think>...</think> 思维链
+ * @returns {{ thinking: string, answer: string }}
+ */
+export function extractThinking(s) {
+  if (!s) return { thinking: '', answer: s || '' };
+  const m = s.match(/<think>([\s\S]*?)<\/think>/);
+  if (m) {
+    return {
+      thinking: m[1].trim(),
+      answer: s.replace(/<think>[\s\S]*?<\/think>\s*/, '').trim()
+    };
+  }
+  return { thinking: '', answer: s.trim() };
+}
+
+/**
+ * 渲染思维链气泡 HTML（如果有的话）
+ * @param {string} thinking - 思维链内容
+ * @param {string} id - 唯一 ID（用于展开/收起）
+ * @returns {string} HTML 字符串
+ */
+export function renderThinkingBubble(thinking, id) {
+  if (!thinking) return '';
+  const esc = escHtml(thinking);
+  const wordCount = thinking.length;
+  return `<div class="thinking-bubble">
+    <button class="thinking-toggle" onclick="this.classList.toggle('open');this.nextElementSibling.classList.toggle('show')">
+      <i class="ri-arrow-right-s-line"></i>💭 思维链 (${wordCount} 字)
+    </button>
+    <div class="thinking-content">${esc}</div>
+  </div>`;
 }
 
 export function shuffle(a) {
@@ -248,16 +284,6 @@ export function animateElements(selector, animationClass = 'entrance-fade-up', s
 export function animateCards() {
   // Only animate cards, not tabs or other UI elements
   animateElements('.q-card, .entry-item, .dim-item');
-}
-
-export function animateModal(modalId) {
-  const modal = document.getElementById(modalId);
-  if (modal) {
-    const box = modal.querySelector('.modal-box');
-    if (box) {
-      box.classList.add('modal-subtle');
-    }
-  }
 }
 
 // Add subtle hover effects to elements

@@ -39,17 +39,55 @@ export function renderRadar(el) {
 
 export function toggleRadarModel(name, visible) {
   radarVisible[name] = visible;
-  renderRadar(document.getElementById('main'));
+  _redrawSvg();
+  _updateLegend();
 }
 
 export function radarShowAll() {
   Object.keys(radarVisible).forEach(k => radarVisible[k] = true);
-  renderRadar(document.getElementById('main'));
+  _redrawSvg();
+  _updateLegend();
 }
 
 export function radarHideAll() {
   Object.keys(radarVisible).forEach(k => radarVisible[k] = false);
-  renderRadar(document.getElementById('main'));
+  _redrawSvg();
+  _updateLegend();
+}
+
+function _getRadarData() {
+  const models = getModelStats();
+  const sorted = Object.values(models).sort((a, b) => b.avgScore - a.avgScore);
+  const colors = ['#3b82f6', '#22c55e', '#a855f7', '#f59e0b', '#ec4899', '#06b6d4', '#ef4444', '#6366f1'];
+  return { sorted, colors };
+}
+
+function _redrawSvg() {
+  const { sorted, colors } = _getRadarData();
+  drawRadar(sorted.filter(m => radarVisible[m.name]), colors);
+}
+
+function _updateLegend() {
+  const { sorted, colors } = _getRadarData();
+  const container = document.querySelector('#main label');
+  if (!container) return;
+  // Update all legend labels' checked state and styling
+  sorted.forEach((m, i) => {
+    const checkbox = document.querySelector(`input[onchange*="${m.name}"]`);
+    if (checkbox) {
+      checkbox.checked = radarVisible[m.name];
+      const label = checkbox.closest('label');
+      if (label) {
+        label.style.background = radarVisible[m.name] ? colors[i % colors.length] + '15' : 'transparent';
+        label.style.borderColor = radarVisible[m.name] ? colors[i % colors.length] + '40' : 'var(--bdr)';
+        const nameSpan = label.querySelector('span:nth-child(3)');
+        if (nameSpan) {
+          nameSpan.style.fontWeight = radarVisible[m.name] ? '600' : '400';
+          nameSpan.style.color = radarVisible[m.name] ? 'var(--t1)' : 'var(--t4)';
+        }
+      }
+    }
+  });
 }
 
 export function drawRadar(models, colors) {

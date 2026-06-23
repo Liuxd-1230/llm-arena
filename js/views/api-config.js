@@ -3,7 +3,7 @@
  * 支持多 profile，可分别指定答题模型和评价模型
  */
 
-import { S } from '../state.js';
+import { S, getAuthHeaders } from '../state.js';
 import { toast } from '../components/toast.js';
 
 const STORAGE_KEY = 'llm_arena_api_config';
@@ -11,7 +11,7 @@ const STORAGE_KEY = 'llm_arena_api_config';
 function loadConfig() {
   try {
     const raw = JSON.parse(localStorage.getItem(STORAGE_KEY));
-    if (raw) {
+    if (raw && Array.isArray(raw.profiles)) {
       // 兼容旧格式：如果没有 answerProfile/judgeProfile，初始化
       if (raw.answerProfile === undefined) raw.answerProfile = 0;
       if (raw.judgeProfile === undefined) raw.judgeProfile = raw.profiles.length > 1 ? 1 : 0;
@@ -277,9 +277,10 @@ window._apiCfg_fetchModels = async function() {
   statusEl.style.color = 'var(--am)';
 
   try {
+    const authHeaders = await getAuthHeaders();
     const resp = await fetch('/api/models', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: authHeaders,
       body: JSON.stringify({ endpoint, api_key: apiKey })
     });
     const data = await resp.json();
@@ -339,9 +340,10 @@ window._apiCfg_test = async function() {
 
   try {
     const t0 = Date.now();
+    const authHeaders = await getAuthHeaders();
     const resp = await fetch('/api/llm', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: authHeaders,
       body: JSON.stringify({ endpoint, api_key: apiKey, model, messages: [{ role: 'user', content: 'Say hi' }], max_tokens: 50 })
     });
     const elapsed = ((Date.now() - t0) / 1000).toFixed(1);

@@ -142,3 +142,37 @@
 .modal-box h3{font-size:16px;font-weight:700;margin-bottom:6px;color:var(--text-primary)}
 .modal-box p{font-size:13px;color:var(--text-tertiary);margin-bottom:16px}
 .modal-foot{display:flex;justify-content:flex-end;gap:8px;margin-top:16px}
+
+/* Thinking Bubble 思维链气泡 */
+.thinking-bubble{
+  margin-bottom:12px;
+  border-radius:var(--r8);
+  border:1px solid var(--border);
+  background:var(--bg-tertiary);
+  overflow:hidden;
+}
+.thinking-toggle{
+  display:flex;align-items:center;gap:6px;
+  width:100%;padding:8px 12px;
+  background:none;border:none;
+  color:var(--text-secondary);font-size:12px;font-weight:600;
+  cursor:pointer;font-family:var(--sans);
+  transition:color 0.15s;
+}
+.thinking-toggle:hover{color:var(--text-primary)}
+.thinking-toggle .ri{font-size:14px;transition:transform 0.2s}
+.thinking-toggle.open .ri{transform:rotate(90deg)}
+.thinking-content{
+  display:none;
+  padding:0 12px 12px;
+  font-size:12px;line-height:1.7;
+  color:var(--text-tertiary);
+  white-space:pre-wrap;word-break:break-word;
+  max-height:300px;overflow-y:auto;
+  border-top:1px solid var(--border);
+  margin-top:0;padding-top:8px;
+}
+.thinking-content.show{display:block}
+/* 深色模式下思维链加微弱蓝紫底色 */
+[data-theme="dark"] .thinking-bubble{background:rgba(168,85,247,0.04);border-color:rgba(168,85,247,0.12)}
+[data-theme="dark"] .thinking-toggle{color:rgba(168,85,247,0.8)}

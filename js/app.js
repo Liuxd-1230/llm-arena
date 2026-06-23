@@ -36,7 +36,7 @@ import {
   showRevealModal, closeRevealModal, doReveal,
   escHtml, escSrcdoc, shuffle, getDim, getDiff, isAutoDim, hasAutoQ, getLongDocForQuestion,
   buildJudgePrompt,
-  animateElements, animateCards, animateModal, addPremiumEffects
+  animateElements, animateCards, addPremiumEffects
 } from './utils.js';
 
 // ============================================================
@@ -143,7 +143,6 @@ window.renderStats = renderStats;
 
 window.animateElements = animateElements;
 window.animateCards = animateCards;
-window.animateModal = animateModal;
 window.addPremiumEffects = addPremiumEffects;
 
 // ============================================================
