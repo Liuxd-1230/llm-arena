@@ -10,6 +10,7 @@ import { toast } from '../components/toast.js';
 import { getDim, getLongDocForQuestion, stripCodeFence, extractThinking } from '../utils.js';
 import { getAnswerProfile } from '../views/api-config.js';
 import { QS } from '../data/questions.js';
+import { autoScore, hasAutoScore } from '../../data/autoscore.js';
 
 /**
  * 获取完整 prompt（包含长文档）
@@ -251,6 +252,18 @@ function _createApiEntry(dimId, q, modelName, answer, thinking) {
     note: 'API 自动答题',
     autoScore: false
   };
+
+  // Auto-score if question has auto-score
+  if (hasAutoScore(q.name)) {
+    const result = autoScore(answer, q.name);
+    if (result) {
+      entry.score = result.total_score;
+      entry.note = '自动评分';
+      entry.autoScore = true;
+      entry.autoDetail = result;
+    }
+  }
+
   S.nextId++;
   S.entries.push(entry);
   save();

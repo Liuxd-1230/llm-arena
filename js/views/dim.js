@@ -9,6 +9,7 @@ import { getDim, getDiff, hasAutoQ, getLongDocForQuestion, stripCodeFence, extra
 import { toast } from '../components/toast.js';
 import { renderSidebar } from '../components/sidebar.js';
 import { render } from '../router.js';
+import { autoScore, hasAutoScore } from '../../data/autoscore.js';
 
 export function setSubmitMode(mode) {
   S.submitMode = mode;
