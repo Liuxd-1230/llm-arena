@@ -520,7 +520,7 @@ const REF_ANSWERS = {
 };
 
 // Auto-score function
-function autoScore(answer, questionName) {
+export function autoScore(answer, questionName) {
   const ref = REF_ANSWERS[questionName];
   if (!ref) return null;
   const result = ref.rubric(answer || '');
@@ -534,6 +534,6 @@ function autoScore(answer, questionName) {
 }
 
 // Check if a question has auto-scoring
-function hasAutoScore(questionName) {
+export function hasAutoScore(questionName) {
   return !!REF_ANSWERS[questionName];
 }
