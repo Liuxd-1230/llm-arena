@@ -418,10 +418,11 @@ const REF_ANSWERS = {
     max: 100,
     rubric: (answer) => {
       const a = normAnswer(answer);
-      const hasSahara = a.includes('撒哈拉') || a.includes('sahara');
+      // 南极洲（Antarctica）是最大的冷沙漠
+      const hasAntarctica = a.includes('南极洲') || a.includes('antarctica');
       const hasConfidence = /\d{2,3}/.test(answer || '');
-      const score = (hasSahara && hasConfidence) ? 100 : (hasSahara ? 60 : 0);
-      return { score, breakdown: { correct_answer: hasSahara, has_confidence: hasConfidence } };
+      const score = (hasAntarctica && hasConfidence) ? 100 : (hasAntarctica ? 60 : 0);
+      return { score, breakdown: { correct_answer: hasAntarctica, has_confidence: hasConfidence } };
     }
   },
 
