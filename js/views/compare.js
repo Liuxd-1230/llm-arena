@@ -7,7 +7,7 @@ import { DIMS } from '../data/questions.js';
 import { S, save } from '../state.js';
 import { renderSidebar } from '../components/sidebar.js';
 import { render } from '../router.js';
-import { escapeAttr } from '../utils.js';
+import { escapeAttr, escHtml } from '../utils.js';
 import { toast } from '../components/toast.js';
 
 /**
@@ -63,7 +63,7 @@ export function renderCompare(el) {
         const rc = i < 3 ? `cmp-r${i + 1}` : '';
         return `<tr>
         <td><span class="cmp-rank ${rc}">${i + 1}</span></td>
-        <td><strong>${m.name}</strong></td>
+        <td><strong>${escHtml(m.name)}</strong></td>
         <td><strong>${m.avgScore}</strong></td>
         <td style="color:var(--t3);">${m.count}题</td>
         <td>${DIMS.map(d => {

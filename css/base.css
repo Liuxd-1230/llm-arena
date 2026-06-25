@@ -11,31 +11,12 @@ body{
   background:var(--bg-primary);
   color:var(--text-primary);
   line-height:1.5;
-  min-height:100dvh;
+  min-height:100vh; /* 回退 */
+  min-height:100dvh; /* 现代浏览器 */
   position:relative;
 }
 
-/* 大理石纹理叠加 */
-body::before{
-  content:'';
-  position:fixed;
-  top:0;left:0;right:0;bottom:0;
-  background:var(--texture-marble);
-  pointer-events:none;
-  z-index:0;
-}
-
-/* 噪点纹理叠加 */
-body::after{
-  content:'';
-  position:fixed;
-  top:0;left:0;right:0;bottom:0;
-  background:var(--texture-noise);
-  background-size:256px 256px;
-  pointer-events:none;
-  z-index:0;
-  opacity:0.5;
-}
+/* body 伪元素纹理叠加在 themes.css 中统一定义，此处不再重复 */
 
 /* 确保内容在纹理之上 */
 body > *{
@@ -45,11 +26,16 @@ body > *{
 
 ::selection{background:var(--accent);color:#fff}
 
-/* 滚动条 */
+/* 滚动条 - Webkit */
 ::-webkit-scrollbar{width:6px}
 ::-webkit-scrollbar-track{background:var(--scrollbar-track)}
 ::-webkit-scrollbar-thumb{background:var(--scrollbar-thumb);border-radius:3px}
 ::-webkit-scrollbar-thumb:hover{background:var(--scrollbar-thumb-hover)}
+/* 滚动条 - Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+}
 
 /* 通用链接样式 */
 a{color:var(--accent);text-decoration:none;transition:color 0.15s}
@@ -75,41 +61,25 @@ code{
 
 /* 深色模式多色流光效果 */
 @keyframes flowGlow {
-  0% {
-    background-position: 0% 50%;
-  }
-  50% {
-    background-position: 100% 50%;
-  }
-  100% {
-    background-position: 0% 50%;
-  }
+  0%   { background-position: 0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  [data-theme="dark"] .content {
-    animation: none;
-  }
-  [data-theme="dark"] .nav::after {
-    animation: none;
-  }
-}
-
-/* 主内容区流光 - 直接作为背景 */
+/* 主内容区流光 */
 [data-theme="dark"] .content {
-  background: 
+  background:
     radial-gradient(ellipse at 20% 50%, rgba(93, 168, 154, 0.06) 0%, transparent 50%),
     radial-gradient(ellipse at 80% 20%, rgba(107, 156, 196, 0.04) 0%, transparent 50%),
     radial-gradient(ellipse at 50% 80%, rgba(168, 85, 247, 0.03) 0%, transparent 50%),
     var(--bg-primary);
   background-size: 200% 200%, 200% 200%, 200% 200%, 100% 100%;
-  animation: flowGlow 8s ease-in-out infinite;
 }
 
 /* 侧边栏流光 */
 [data-theme="dark"] .sidebar {
-  background: 
-    linear-gradient(180deg, 
+  background:
+    linear-gradient(180deg,
       rgba(93, 168, 154, 0.04) 0%,
       transparent 30%,
       rgba(107, 156, 196, 0.02) 60%,
@@ -139,5 +109,14 @@ code{
     transparent
   );
   background-size: 200% 100%;
-  animation: flowGlow 6s ease-in-out infinite;
+}
+
+/* 动画只在用户未开启减少动效时播放 */
+@media (prefers-reduced-motion: no-preference) {
+  [data-theme="dark"] .content {
+    animation: flowGlow 8s ease-in-out infinite;
+  }
+  [data-theme="dark"] .nav::after {
+    animation: flowGlow 6s ease-in-out infinite;
+  }
 }

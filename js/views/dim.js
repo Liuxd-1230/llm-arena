@@ -148,7 +148,7 @@ export function renderCollectPanel() {
       ${getLongDocForQuestion(q.name) ? `<div style="font-size:11px;color:var(--am);margin-bottom:12px;">📄 此题含长文档(${typeof LONG_DOCS !== 'undefined' && LONG_DOCS[getLongDocForQuestion(q.name)] ? LONG_DOCS[getLongDocForQuestion(q.name)].word_count : ''}字)，复制Prompt时自动包含</div>` : ''}
       <div class="label">模型名称</div>
       <input type="text" class="input" id="cModel" placeholder="如 GPT-4o / Claude-3.5 / Qwen-2.5" style="margin-bottom:12px;" list="modelList">
-      <datalist id="modelList">${[...new Set(S.entries.map(e => e.model))].map(m => `<option value="${m}">`).join('')}</datalist>
+      <datalist id="modelList">${[...new Set(S.entries.map(e => e.model))].map(m => `<option value="${escapeAttr(m)}">`).join('')}</datalist>
       <div class="label">粘贴模型回答</div>
       <textarea class="textarea" id="cAnswer" placeholder="粘贴模型回答..." style="margin-bottom:12px;"></textarea>
       ${dim.autoScore ? `
@@ -178,7 +178,7 @@ export function renderCollectPanel() {
         <div style="background:var(--s2);border:1px solid var(--bdr);border-radius:var(--r8);margin-bottom:6px;">
           <div class="entry-item" style="flex-wrap:wrap;gap:8px;border:none;background:transparent;" onclick="toggleEntryDetail(${e.id})" style="cursor:pointer;">
             <span class="entry-blind-id">${e.blindId}</span>
-            <span style="font-size:13px;font-weight:500;">${e.model}</span>
+            <span style="font-size:13px;font-weight:500;">${escHtml(e.model)}</span>
             <span style="font-size:12px;color:var(--t3);">${e.qName}</span>
             <span style="margin-left:auto;font-size:12px;">${scoreDisplay.join(' ')}</span>
             <button class="btn btn-ghost btn-xs" onclick="event.stopPropagation();copyForLLMJudge(${e.id})" title="复制Prompt给强模型"><i class="ri-robot-line"></i></button>
@@ -189,9 +189,9 @@ export function renderCollectPanel() {
           <div id="detail-${e.id}" style="display:none;padding:0 16px 12px;">
             ${e.llmDetail ? `
               <div style="font-size:11px;font-weight:600;color:var(--ac);margin-bottom:8px;">🤖 强模型评语</div>
-              ${e.llmDetail.highlights ? `<div style="font-size:12px;margin-bottom:6px;"><span style="color:var(--gn);">亮点：</span>${Array.isArray(e.llmDetail.highlights) ? e.llmDetail.highlights.join('；') : e.llmDetail.highlights}</div>` : ''}
-              ${e.llmDetail.improvements ? `<div style="font-size:12px;margin-bottom:6px;"><span style="color:var(--am);">改进：</span>${Array.isArray(e.llmDetail.improvements) ? e.llmDetail.improvements.join('；') : e.llmDetail.improvements}</div>` : ''}
-              ${e.llmDetail.overall_comment ? `<div style="font-size:12px;color:var(--t2);line-height:1.6;">${e.llmDetail.overall_comment}</div>` : ''}
+              ${e.llmDetail.highlights ? `<div style="font-size:12px;margin-bottom:6px;"><span style="color:var(--gn);">亮点：</span>${escHtml(Array.isArray(e.llmDetail.highlights) ? e.llmDetail.highlights.join('；') : e.llmDetail.highlights)}</div>` : ''}
+              ${e.llmDetail.improvements ? `<div style="font-size:12px;margin-bottom:6px;"><span style="color:var(--am);">改进：</span>${escHtml(Array.isArray(e.llmDetail.improvements) ? e.llmDetail.improvements.join('；') : e.llmDetail.improvements)}</div>` : ''}
+              ${e.llmDetail.overall_comment ? `<div style="font-size:12px;color:var(--t2);line-height:1.6;">${escHtml(e.llmDetail.overall_comment)}</div>` : ''}
               ${e.llmDetail.accuracy ? `<div style="font-size:11px;color:var(--t3);margin-top:6px;">准确性:${e.llmDetail.accuracy.score}/${e.llmDetail.accuracy.max} 完整性:${e.llmDetail.completeness?.score || '-'}/${e.llmDetail.completeness?.max || '-'} 表达:${e.llmDetail.expression?.score || '-'}/${e.llmDetail.expression?.max || '-'} 洞察:${e.llmDetail.insight?.score || '-'}/${e.llmDetail.insight?.max || '-'}</div>` : ''}
             ` : `<div style="font-size:12px;color:var(--t4);">暂无强模型评语</div>`}
             ${e.autoDetail ? `<div style="font-size:11px;font-weight:600;color:var(--gn);margin-top:8px;">⚡ 自动评分详情</div><div style="font-size:11px;color:var(--t3);">${JSON.stringify(e.autoDetail.breakdown || {})}</div>` : ''}

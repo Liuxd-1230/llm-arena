@@ -21,7 +21,9 @@
 .blind-progress-bar{width:120px;height:4px;background:var(--bg-card-hover);border-radius:2px}
 .blind-progress-fill{height:100%;border-radius:2px;background:var(--accent);transition:width 0.3s}
 .blind-main{flex:1;overflow:auto;display:flex;flex-direction:column}
-.blind-preview-area{flex:1;background:#fff;border:none;width:100%;display:block}
+.blind-preview-area{flex:1;background:var(--bg-primary);border:none;width:100%;display:block}
+/* 前端代码的 iframe 保持白色背景（代码本身的背景色） */
+[data-theme="dark"] .blind-preview-area.code-preview{background:#1a1a2e}
 .blind-answer-area{
   display:none;max-height:40vh;overflow:auto;
   background:var(--bg-secondary);

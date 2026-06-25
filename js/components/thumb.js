@@ -149,10 +149,11 @@ export function openPreview(idx) {
 }
 
 export function calcPreviewTotal() {
-  const v = parseInt(document.getElementById('scoreVisual').value) || 0;
-  const i = parseInt(document.getElementById('scoreInteract').value) || 0;
-  const c = parseInt(document.getElementById('scoreCode').value) || 0;
-  const cr = parseInt(document.getElementById('scoreCreative').value) || 0;
+  const clamp = (val, max) => Math.max(0, Math.min(parseInt(val) || 0, max));
+  const v  = clamp(document.getElementById('scoreVisual').value, 25);
+  const i  = clamp(document.getElementById('scoreInteract').value, 25);
+  const c  = clamp(document.getElementById('scoreCode').value, 25);
+  const cr = clamp(document.getElementById('scoreCreative').value, 25);
   document.getElementById('previewTotal').textContent = Math.min(v + i + c + cr, 100);
 }
 

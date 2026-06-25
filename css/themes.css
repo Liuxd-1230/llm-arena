@@ -18,7 +18,7 @@
   --text-primary: #2C2420;        /* 深棕黑 */
   --text-secondary: #6B5E54;      /* 中灰棕 */
   --text-tertiary: #9B8E84;       /* 浅灰棕 */
-  --text-muted: #B8ADA4;          /* 最浅 */
+  --text-muted: #8A7F76;          /* 最浅 */
 
   /* 强调色 - 古典金 */
   --accent: #C4993C;              /* 古典金 */
@@ -110,7 +110,7 @@
   --text-primary: #E8E4DE;        /* 暖白 */
   --text-secondary: #9BA3B0;      /* 冷灰 */
   --text-tertiary: #6B7280;       /* 中灰 */
-  --text-muted: #4B5563;          /* 暗灰 */
+  --text-muted: #6B7280;          /* 暗灰 */
 
   /* 强调色 - 铜绿 (Patina) */
   --accent: #5DA89A;              /* 铜绿 */
@@ -192,15 +192,16 @@
   --dim-frontend: #C49A6A;        /* 古铜金 */
 }
 
-/* === 主题切换过渡（仅对需要的元素） === */
-.glass-card, .btn, .sidebar, .tabs, .tab-row, .tab, .tab-btn,
-.card, .card-header, .card-body, .input, .textarea, .modal-box,
-.toast, .nav, .diff-pill, .entry-item, .q-card, .dim-item,
-.theme-toggle, .thumb-card, .preview-rubric-item {
+/* === 主题切换过渡 ===
+   用 :where() 降低优先级，避免覆盖组件自身的 transition。
+   只对核心容器做过渡，子元素通过 inherit 自动跟随。 */
+:where(.card, .card-header, .card-body, .input, .textarea,
+       .modal-box, .toast, .nav, .sidebar, .glass-card,
+       .diff-pill, .entry-item, .q-card, .dim-item,
+       .thumb-card, .preview-rubric-item) {
   transition: background-color 0.3s ease,
               color 0.3s ease,
-              border-color 0.3s ease,
-              box-shadow 0.3s ease;
+              border-color 0.3s ease;
 }
 
 /* === 纹理叠加层 === */

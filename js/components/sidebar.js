@@ -5,6 +5,7 @@
 
 import { DIMS, QS } from '../data/questions.js';
 import { S } from '../state.js';
+import { escHtml } from '../utils.js';
 
 export function toggleSidebar() {
   const sb = document.getElementById('sidebar');

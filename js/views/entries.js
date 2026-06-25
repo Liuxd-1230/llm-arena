@@ -41,7 +41,7 @@ export function openEntryPreview(id) {
     </div>
     <div style="flex:1;position:relative;overflow:auto;">
       ${renderThinkingBubble(entry.thinking || '', 'entry-full')}
-      <iframe style="width:100%;height:100%;border:none;" srcdoc="${escSrcdoc(stripCodeFence(entry.answer))}"></iframe>
+      <iframe sandbox="allow-scripts" style="width:100%;height:100%;border:none;" srcdoc="${escSrcdoc(stripCodeFence(entry.answer))}"></iframe>
       <div id="entryPreviewCode" style="display:none;position:absolute;inset:0;background:var(--bg-primary);z-index:1;overflow:auto;padding:20px;">
         <pre style="font-family:var(--mono);font-size:12px;line-height:1.6;color:var(--text-secondary);white-space:pre-wrap;">${escHtml(entry.answer)}</pre>
       </div>
@@ -144,7 +144,7 @@ function renderGroupedView(entries) {
         <i class="ri-arrow-${isCollapsed ? 'right' : 'down'}-s-line" style="font-size:16px;color:var(--text-muted);transition:transform 0.2s;"></i>
         <div style="flex:1;min-width:0;">
           <div style="font-size:14px;font-weight:600;color:var(--text-primary);display:flex;align-items:center;gap:8px;">
-            ${S.revealed ? model : `<span style="filter:blur(3px);">${model}</span>`}
+            ${S.revealed ? escHtml(model) : `<span style="filter:blur(3px);">${escHtml(model)}</span>`}
             <span style="font-size:11px;font-weight:400;color:var(--text-muted);">${dims.join(' · ')}</span>
           </div>
           <div style="font-size:12px;color:var(--text-tertiary);margin-top:2px;">

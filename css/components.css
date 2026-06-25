@@ -84,6 +84,7 @@
 
 /* Glass Card */
 .glass-card{
+  background:var(--bg-secondary); /* 回退：不透明背景 */
   background:var(--glass-bg);
   backdrop-filter:blur(var(--glass-blur));
   -webkit-backdrop-filter:blur(var(--glass-blur));
