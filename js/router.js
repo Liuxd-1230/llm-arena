@@ -7,7 +7,7 @@ import { QS } from './data/questions.js';
 import { S } from './state.js';
 import { renderSidebar, closeSidebar } from './components/sidebar.js';
 import { renderWelcome } from './views/welcome.js';
-import { renderDim } from './views/dim.js';
+import { renderDim, closeCollectPanel } from './views/dim.js';
 import { renderEntries } from './views/entries.js';
 import { renderCompare } from './views/compare.js';
 import { renderRadar } from './views/radar.js';
@@ -42,8 +42,7 @@ export function selectQ(dim, diff, name) {
 
   // 如果点击的是已选中的题目，则关闭收集面板
   if (S.q && S.q.dim === dim && S.q.diff === diff && S.q.name === name) {
-    S.q = null;
-    render();
+    closeCollectPanel();
     return;
   }
 

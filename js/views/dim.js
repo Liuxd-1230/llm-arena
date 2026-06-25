@@ -15,6 +15,14 @@ import { autoScore, hasAutoScore } from '../../data/autoscore.js';
 const _formStateCache = {};
 
 /**
+ * 关闭收集面板
+ */
+export function closeCollectPanel() {
+  S.q = null;
+  render();
+}
+
+/**
  * 保存当前表单状态
  */
 function _saveFormState() {
@@ -139,7 +147,7 @@ export function renderCollectPanel() {
       <div style="display:flex;align-items:center;gap:8px;">
         <span style="font-size:11px;padding:3px 8px;border-radius:100px;background:var(--gn2);color:var(--gn);">⚡自动评分</span>
         <span style="font-size:11px;padding:3px 8px;border-radius:100px;background:var(--ac2);color:var(--ac);">🤖强模型评测</span>
-        <button class="btn btn-ghost btn-xs" onclick="S.q=null;render()" title="关闭收集面板"><i class="ri-close-line"></i></button>
+        <button class="btn btn-ghost btn-xs" onclick="closeCollectPanel()" title="关闭收集面板"><i class="ri-close-line"></i></button>
       </div>
     </div>
     <div class="card-body">
