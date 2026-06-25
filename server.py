@@ -15,8 +15,10 @@ import secrets
 import socket
 import ssl
 import sys
+import time
 import urllib.request
 import urllib.error
+from collections import defaultdict
 from http.server import HTTPServer, SimpleHTTPRequestHandler
 from pathlib import Path
 
@@ -26,6 +28,11 @@ DATA_FILE = DATA_DIR / "state.json"
 
 # 请求体大小上限 (10MB)
 MAX_BODY_SIZE = 10 * 1024 * 1024
+
+# 速率限制：每个 IP 每分钟最多 60 次 API 请求
+RATE_LIMIT_WINDOW = 60  # 秒
+RATE_LIMIT_MAX = 60     # 每窗口最大请求数
+_rate_limit_store = defaultdict(list)  # {ip: [timestamp, ...]}
 
 # 确保数据目录存在
 DATA_DIR.mkdir(exist_ok=True)
@@ -129,6 +136,18 @@ def _check_auth(handler):
     return False
 
 
+def _check_rate_limit(handler):
+    """检查请求速率限制，返回 True 表示允许，False 表示限流"""
+    ip = handler.client_address[0]
+    now = time.time()
+    # 清理过期记录
+    _rate_limit_store[ip] = [t for t in _rate_limit_store[ip] if now - t < RATE_LIMIT_WINDOW]
+    if len(_rate_limit_store[ip]) >= RATE_LIMIT_MAX:
+        return False
+    _rate_limit_store[ip].append(now)
+    return True
+
+
 class Handler(SimpleHTTPRequestHandler):
     """处理静态文件 + /api/state + /api/llm 接口"""
 
@@ -174,6 +193,11 @@ class Handler(SimpleHTTPRequestHandler):
             super().do_GET()
 
     def do_POST(self):
+        # 速率限制检查
+        if not _check_rate_limit(self):
+            self._json_response(429, json.dumps({"error": "请求过于频繁，请稍后再试"}))
+            return
+
         if self.path.startswith("/api/state"):
             if not _check_auth(self):
                 self._json_response(401, json.dumps({"error": "未授权，请提供有效 token"}))
@@ -207,7 +231,7 @@ class Handler(SimpleHTTPRequestHandler):
             self._json_response(200, json.dumps(None))
 
     def _handle_post_state(self):
-        """保存 state JSON 到本地文件"""
+        """保存 state JSON 到本地文件（原子写入，防止数据丢失）"""
         try:
             length = int(self.headers.get("Content-Length", 0))
             if length > MAX_BODY_SIZE:
@@ -227,8 +251,24 @@ class Handler(SimpleHTTPRequestHandler):
                 self._json_response(400, json.dumps({"error": "entries 必须是数组"}))
                 return
             DATA_DIR.mkdir(exist_ok=True)
-            with open(DATA_FILE, "w", encoding="utf-8") as f:
+            # 备份旧文件（最多保留 5 个备份）
+            if DATA_FILE.exists():
+                backup_dir = DATA_DIR / "backups"
+                backup_dir.mkdir(exist_ok=True)
+                timestamp = time.strftime("%Y%m%d_%H%M%S")
+                backup_file = backup_dir / f"state_{timestamp}.json"
+                DATA_FILE.rename(backup_file)
+                # 清理旧备份，只保留最新 5 个
+                backups = sorted(backup_dir.glob("state_*.json"), reverse=True)
+                for old_backup in backups[5:]:
+                    old_backup.unlink(missing_ok=True)
+            # 原子写入：先写临时文件，再重命名
+            tmp_file = DATA_FILE.with_suffix(".json.tmp")
+            with open(tmp_file, "w", encoding="utf-8") as f:
                 f.write(body)
+                f.flush()
+                os.fsync(f.fileno())
+            tmp_file.rename(DATA_FILE)
             self._json_response(200, json.dumps({"ok": True}))
         except json.JSONDecodeError as e:
             self._json_response(400, json.dumps({"error": f"Invalid JSON: {e}"}))
@@ -388,9 +428,11 @@ class Handler(SimpleHTTPRequestHandler):
             }))
 
     def _handle_streaming_response(self, req):
-        """流式请求：SSE 透传"""
+        """流式请求：SSE 透传（带超时保护）"""
+        STREAM_TIMEOUT = 300  # 5 分钟超时
+        start_time = time.time()
         try:
-            resp = urllib.request.urlopen(req, timeout=None, context=SSL_CTX)
+            resp = urllib.request.urlopen(req, timeout=60, context=SSL_CTX)
             self.send_response(200)
             self.send_header("Content-Type", "text/event-stream; charset=utf-8")
             self.send_header("Cache-Control", "no-cache")
@@ -398,6 +440,13 @@ class Handler(SimpleHTTPRequestHandler):
             self.end_headers()
 
             for line in resp:
+                # 检查超时
+                if time.time() - start_time > STREAM_TIMEOUT:
+                    err_msg = json.dumps({"error": "流式响应超时"})
+                    self.wfile.write(f"data: {err_msg}\n\n".encode("utf-8"))
+                    self.wfile.write(b"data: [DONE]\n\n")
+                    self.wfile.flush()
+                    break
                 decoded = line.decode("utf-8", errors="replace")
                 self.wfile.write(decoded.encode("utf-8"))
                 self.wfile.flush()

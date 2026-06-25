@@ -247,7 +247,7 @@ export function closeFuncModal() {
 export function showRevealModal() {
   const scored = S.entries.filter(e => e.score !== null && e.score !== undefined);
   document.getElementById('revealMapping').innerHTML = scored.map(r =>
-    `${r.blindId} → <strong>${r.model}</strong> (${r.qName}: ${r.score}分${r.autoScore ? '⚡' : ''})`
+    `${escHtml(r.blindId)} → <strong>${escHtml(r.model)}</strong> (${escHtml(r.qName)}: ${r.score}分${r.autoScore ? '⚡' : ''})`
   ).join('<br>') || '暂无数据';
   document.getElementById('revealModal').classList.add('show');
 }

@@ -147,7 +147,13 @@ export async function loadState() {
  * 手动导出数据为 JSON 文件下载
  */
 export function exportToFile() {
-  const data = JSON.stringify({ entries: S.entries, nextId: S.nextId, revealed: S.revealed }, null, 2);
+  const data = JSON.stringify({
+    version: 1,  // 数据格式版本号，便于未来兼容
+    entries: S.entries,
+    nextId: S.nextId,
+    revealed: S.revealed,
+    exportedAt: new Date().toISOString()
+  }, null, 2);
   const blob = new Blob([data], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
