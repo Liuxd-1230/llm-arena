@@ -29,6 +29,7 @@ function getFullPrompt(q) {
  * 创建 API 运行遮罩层 HTML
  */
 function createOverlayHTML(q, dim) {
+  const hasAuto = hasAutoScore(q.name);
   return `
     <div id="apiRunnerOverlay" style="
       position:fixed;inset:0;background:rgba(0,0,0,0.7);backdrop-filter:blur(8px);
@@ -56,6 +57,16 @@ function createOverlayHTML(q, dim) {
           <div style="font-size:11px;color:var(--t4);margin-bottom:4px;">题目</div>
           <div style="font-size:13px;color:var(--t2);font-weight:500;">${dim.emoji || ''} ${q.name} (${q.diff})</div>
         </div>
+
+        <!-- Auto-score Option -->
+        ${hasAuto ? `
+        <div style="padding:12px 20px;border-bottom:1px solid var(--bdr);display:flex;align-items:center;gap:8px;">
+          <input type="checkbox" id="apiRunnerAutoScore" checked style="accent-color:var(--ac);">
+          <label for="apiRunnerAutoScore" style="font-size:13px;color:var(--t2);cursor:pointer;">
+            ⚡ 自动评分（客观题）
+          </label>
+        </div>
+        ` : ''}
 
         <!-- Streaming Answer -->
         <div style="flex:1;overflow-y:auto;padding:20px;min-height:200px;" id="apiRunnerContent">
@@ -209,7 +220,9 @@ export async function startApiRun(dimId, diff, qName) {
 
     // 自动创建 entry
     if (cleanAnswer.trim()) {
-      _createApiEntry(dimId, q, profile.model, cleanAnswer.trim(), thinking.trim());
+      const autoScoreCheckbox = document.getElementById('apiRunnerAutoScore');
+      const autoScoreEnabled = autoScoreCheckbox ? autoScoreCheckbox.checked : true;
+      _createApiEntry(dimId, q, profile.model, cleanAnswer.trim(), thinking.trim(), autoScoreEnabled);
       toast(`✅ ${q.name} 答题完成 (${elapsed}s)`);
     } else {
       toast('模型未返回有效回答', 'ri-error-warning-line');
@@ -236,7 +249,7 @@ export async function startApiRun(dimId, diff, qName) {
 /**
  * 创建 API 答题 entry
  */
-function _createApiEntry(dimId, q, modelName, answer, thinking) {
+function _createApiEntry(dimId, q, modelName, answer, thinking, autoScoreEnabled = true) {
   const blindId = '#' + String(S.nextId).padStart(3, '0');
   const entry = {
     id: S.nextId,
@@ -253,8 +266,8 @@ function _createApiEntry(dimId, q, modelName, answer, thinking) {
     autoScore: false
   };
 
-  // Auto-score if question has auto-score
-  if (hasAutoScore(q.name)) {
+  // Auto-score only if enabled AND question has auto-score
+  if (autoScoreEnabled && hasAutoScore(q.name)) {
     const result = autoScore(answer, q.name);
     if (result) {
       entry.score = result.total_score;
