@@ -5,7 +5,7 @@
 
 import { DIMS, QS, DIFFS } from '../data/questions.js';
 import { S, save } from '../state.js';
-import { getDim, getDiff, hasAutoQ, getLongDocForQuestion, stripCodeFence, extractThinking, escapeAttr } from '../utils.js';
+import { getDim, getDiff, hasAutoQ, getLongDocForQuestion, stripCodeFence, extractThinking, escapeAttr, escHtml } from '../utils.js';
 import { toast } from '../components/toast.js';
 import { renderSidebar } from '../components/sidebar.js';
 import { render } from '../router.js';
