@@ -266,8 +266,8 @@ function _createApiEntry(dimId, q, modelName, answer, thinking, autoScoreEnabled
     autoScore: false
   };
 
-  // Auto-score only if enabled AND question has auto-score
-  if (autoScoreEnabled && hasAutoScore(q.name)) {
+  // Auto-score only if enabled (caller already checked hasAutoScore)
+  if (autoScoreEnabled) {
     const result = autoScore(answer, q.name);
     if (result) {
       entry.score = result.total_score;

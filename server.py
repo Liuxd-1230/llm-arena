@@ -34,6 +34,9 @@ RATE_LIMIT_WINDOW = 60  # 秒
 RATE_LIMIT_MAX = 300    # 每窗口最大请求数
 _rate_limit_store = defaultdict(list)  # {ip: [timestamp, ...]}
 
+# 流式响应超时（秒）
+STREAM_TIMEOUT = 300  # 5 分钟
+
 # 确保数据目录存在
 DATA_DIR.mkdir(exist_ok=True)
 
@@ -140,8 +143,13 @@ def _check_rate_limit(handler):
     """检查请求速率限制，返回 True 表示允许，False 表示限流"""
     ip = handler.client_address[0]
     now = time.time()
+    cutoff = now - RATE_LIMIT_WINDOW
     # 清理过期记录
-    _rate_limit_store[ip] = [t for t in _rate_limit_store[ip] if now - t < RATE_LIMIT_WINDOW]
+    _rate_limit_store[ip] = [t for t in _rate_limit_store[ip] if t > cutoff]
+    # 如果 IP 没有活跃记录，删除条目防止内存泄漏
+    if not _rate_limit_store[ip]:
+        del _rate_limit_store[ip]
+        return True
     if len(_rate_limit_store[ip]) >= RATE_LIMIT_MAX:
         return False
     _rate_limit_store[ip].append(now)
@@ -251,8 +259,17 @@ class Handler(SimpleHTTPRequestHandler):
                 self._json_response(400, json.dumps({"error": "entries 必须是数组"}))
                 return
             DATA_DIR.mkdir(exist_ok=True)
-            # 备份旧文件（最多保留 5 个备份）
+            # 只在数据实际变化时才备份（比较内容）
             if DATA_FILE.exists():
+                try:
+                    old_content = DATA_FILE.read_text(encoding="utf-8")
+                    if old_content == body:
+                        # 数据未变化，跳过备份和写入
+                        self._json_response(200, json.dumps({"ok": True, "unchanged": True}))
+                        return
+                except Exception:
+                    pass
+                # 数据变化了，创建备份
                 backup_dir = DATA_DIR / "backups"
                 backup_dir.mkdir(exist_ok=True)
                 timestamp = time.strftime("%Y%m%d_%H%M%S")
@@ -429,7 +446,6 @@ class Handler(SimpleHTTPRequestHandler):
 
     def _handle_streaming_response(self, req):
         """流式请求：SSE 透传（带超时保护）"""
-        STREAM_TIMEOUT = 300  # 5 分钟超时
         start_time = time.time()
         try:
             resp = urllib.request.urlopen(req, timeout=60, context=SSL_CTX)
