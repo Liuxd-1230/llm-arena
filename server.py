@@ -29,9 +29,9 @@ DATA_FILE = DATA_DIR / "state.json"
 # 请求体大小上限 (10MB)
 MAX_BODY_SIZE = 10 * 1024 * 1024
 
-# 速率限制：每个 IP 每分钟最多 60 次 API 请求
+# 速率限制：每个 IP 每分钟最多 300 次 API 请求（批量答题需要）
 RATE_LIMIT_WINDOW = 60  # 秒
-RATE_LIMIT_MAX = 60     # 每窗口最大请求数
+RATE_LIMIT_MAX = 300    # 每窗口最大请求数
 _rate_limit_store = defaultdict(list)  # {ip: [timestamp, ...]}
 
 # 确保数据目录存在
