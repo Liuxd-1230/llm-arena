@@ -40,6 +40,13 @@ export function selectQ(dim, diff, name) {
     window._saveFormState();
   }
 
+  // 如果点击的是已选中的题目，则关闭收集面板
+  if (S.q && S.q.dim === dim && S.q.diff === diff && S.q.name === name) {
+    S.q = null;
+    render();
+    return;
+  }
+
   S.q = QS.find(q => q.dim === dim && q.diff === diff && q.name === name);
   S.submitMode = 'auto';
   render();
