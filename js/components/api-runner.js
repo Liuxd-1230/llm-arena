@@ -280,6 +280,79 @@ function _removeOverlay() {
 }
 
 /**
+ * 显示批量进度遮罩
+ */
+function _showBatchProgress(current, total, title) {
+  // 移除已存在的进度遮罩
+  _hideBatchProgress();
+
+  const overlay = document.createElement('div');
+  overlay.id = 'batchProgressOverlay';
+  overlay.style.cssText = `
+    position:fixed;inset:0;z-index:300;
+    background:rgba(0,0,0,0.7);backdrop-filter:blur(8px);
+    display:flex;align-items:center;justify-content:center;
+  `;
+  overlay.innerHTML = `
+    <div style="
+      background:var(--s1);border:1px solid var(--bdr);border-radius:var(--r16);
+      width:90%;max-width:500px;padding:32px;text-align:center;
+    ">
+      <div style="font-size:32px;margin-bottom:16px;">🤖</div>
+      <div style="font-size:16px;font-weight:600;color:var(--t1);margin-bottom:8px;">
+        ${title}中...
+      </div>
+      <div id="batchProgressText" style="font-size:14px;color:var(--t3);margin-bottom:16px;">
+        ${current}/${total}
+      </div>
+      <div style="background:var(--s2);border-radius:100px;height:8px;overflow:hidden;margin-bottom:16px;">
+        <div id="batchProgressBar" style="
+          height:100%;background:var(--ac);border-radius:100px;
+          transition:width 0.3s;width:${(current / total * 100)}%;
+        "></div>
+      </div>
+      <div id="batchProgressDetail" style="font-size:12px;color:var(--t4);min-height:18px;">
+        准备中...
+      </div>
+      <button class="btn btn-outline btn-sm" style="margin-top:16px;" onclick="window._batchProgress_cancel()">
+        <i class="ri-close-line"></i> 取消
+      </button>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+}
+
+/**
+ * 更新批量进度
+ */
+function _updateBatchProgress(current, total, currentTask) {
+  const textEl = document.getElementById('batchProgressText');
+  const barEl = document.getElementById('batchProgressBar');
+  const detailEl = document.getElementById('batchProgressDetail');
+
+  if (textEl) textEl.textContent = `${current}/${total}`;
+  if (barEl) barEl.style.width = `${(current / total * 100)}%`;
+  if (detailEl) detailEl.textContent = `正在处理: ${currentTask}`;
+}
+
+/**
+ * 隐藏批量进度遮罩
+ */
+function _hideBatchProgress() {
+  const overlay = document.getElementById('batchProgressOverlay');
+  if (overlay) overlay.remove();
+}
+
+// 取消批量操作的标志
+let _batchCancelled = false;
+
+window._batchProgress_cancel = function() {
+  _batchCancelled = true;
+  _hideBatchProgress();
+  toast('已取消批量操作');
+};
+
+/**
  * 取消当前运行
  */
 window._apiRunner_cancel = function() {
@@ -315,14 +388,26 @@ export async function startBatchRun(questions) {
     return;
   }
 
-  toast(`开始批量运行 ${questions.length} 个问题...`);
+  // 显示进度遮罩
+  _batchCancelled = false;
+  _showBatchProgress(0, questions.length, '批量答题');
 
   let completed = 0;
   let failed = 0;
 
-  for (const qInfo of questions) {
+  for (let i = 0; i < questions.length; i++) {
+    // 检查是否取消
+    if (_batchCancelled) {
+      toast(`已取消，完成 ${completed} 个`);
+      break;
+    }
+
+    const qInfo = questions[i];
     const q = QS.find(q => q.dim === qInfo.dimId && q.diff === qInfo.diff && q.name === qInfo.qName);
     if (!q) { failed++; continue; }
+
+    // 更新进度
+    _updateBatchProgress(i + 1, questions.length, q.name);
 
     // 检查是否已有此题的回答
     const existing = S.entries.find(e => e.qName === q.name && e.model === profile.model);
@@ -340,10 +425,15 @@ export async function startBatchRun(questions) {
     }
 
     // 间隔 500ms 避免限流
-    await new Promise(r => setTimeout(r, 500));
+    if (i < questions.length - 1) {
+      await new Promise(r => setTimeout(r, 500));
+    }
   }
 
-  toast(`批量完成: ${completed} 成功, ${failed} 失败`);
+  _hideBatchProgress();
+  if (!_batchCancelled) {
+    toast(`批量完成: ${completed} 成功, ${failed} 失败`);
+  }
 }
 
 /**

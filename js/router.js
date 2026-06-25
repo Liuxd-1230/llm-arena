@@ -35,6 +35,11 @@ export function selectDim(id) {
 }
 
 export function selectQ(dim, diff, name) {
+  // 保存当前表单状态（如果有的话）
+  if (window._saveFormState) {
+    window._saveFormState();
+  }
+
   S.q = QS.find(q => q.dim === dim && q.diff === diff && q.name === name);
   S.submitMode = 'auto';
   render();

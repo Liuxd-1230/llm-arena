@@ -46,7 +46,7 @@ function extractJsonFromResponse(text) {
 
 // ==================== Progress Overlay ====================
 
-function showJudgeProgress(message, progress) {
+function showJudgeProgress(message, progress, detail = '') {
   let overlay = document.getElementById('judgeProgressOverlay');
   if (!overlay) {
     overlay = document.createElement('div');
@@ -57,20 +57,23 @@ function showJudgeProgress(message, progress) {
       display:flex;align-items:center;justify-content:center;
     `;
     overlay.innerHTML = `
-      <div style="background:var(--bg-primary);border:1px solid var(--border);border-radius:12px;padding:32px 40px;text-align:center;min-width:320px;box-shadow:0 20px 60px rgba(0,0,0,0.3);">
+      <div style="background:var(--s1);border:1px solid var(--bdr);border-radius:var(--r16);padding:32px 40px;text-align:center;min-width:320px;box-shadow:0 20px 60px rgba(0,0,0,0.3);">
         <div style="font-size:32px;margin-bottom:16px;">🤖</div>
-        <div id="judgeProgressMsg" style="font-size:15px;font-weight:600;color:var(--text-primary);margin-bottom:12px;">评价中...</div>
-        <div style="background:var(--bg-tertiary);border-radius:100px;height:6px;overflow:hidden;margin-bottom:8px;">
-          <div id="judgeProgressBar" style="height:100%;background:var(--accent);border-radius:100px;transition:width 0.3s;width:0%;"></div>
+        <div id="judgeProgressMsg" style="font-size:15px;font-weight:600;color:var(--t1);margin-bottom:12px;">评价中...</div>
+        <div style="background:var(--s2);border-radius:100px;height:6px;overflow:hidden;margin-bottom:8px;">
+          <div id="judgeProgressBar" style="height:100%;background:var(--ac);border-radius:100px;transition:width 0.3s;width:0%;"></div>
         </div>
-        <div id="judgeProgressDetail" style="font-size:12px;color:var(--text-muted);"></div>
+        <div id="judgeProgressDetail" style="font-size:12px;color:var(--t4);min-height:18px;margin-bottom:16px;"></div>
+        <button class="btn btn-outline btn-sm" onclick="window._cancelBatchJudge()">
+          <i class="ri-close-line"></i> 取消
+        </button>
       </div>
     `;
     document.body.appendChild(overlay);
   }
   document.getElementById('judgeProgressMsg').textContent = message;
   document.getElementById('judgeProgressBar').style.width = progress + '%';
-  document.getElementById('judgeProgressDetail').textContent = '';
+  document.getElementById('judgeProgressDetail').textContent = detail || '';
 }
 
 function hideJudgeProgress() {
@@ -147,11 +150,14 @@ export async function startApiJudge(entryId, profile = null) {
     entry.llmDetail = parsed;
     entry.note = `AI评价 (${profile.model})`;
 
-    // If no auto score yet, use LLM score as primary
-    if (!entry.autoScore) {
-      entry.score = entry.llmScore;
-    } else {
+    // 双轨评分逻辑：取平均分作为主分数
+    if (entry.autoScore && entry.score !== null && entry.score !== undefined) {
+      // 有自动评分时，取两者的平均分
+      entry.score = Math.round((entry.score + entry.llmScore) / 2);
       entry.note = '双轨评分';
+    } else {
+      // 没有自动评分时，直接使用 LLM 分数
+      entry.score = entry.llmScore;
     }
 
     showJudgeProgress(`评价完成 ${entry.blindId}: ${entry.llmScore}分`, 100);
@@ -172,6 +178,9 @@ export async function startApiJudge(entryId, profile = null) {
 
 // ==================== 批量评价 ====================
 
+// 取消批量评价的标志
+let _batchJudgeCancelled = false;
+
 export async function startBatchJudge(entryIds, profile = null) {
   if (!entryIds || entryIds.length === 0) {
     toast('没有可评价的记录', 'ri-error-warning-line');
@@ -189,7 +198,15 @@ export async function startBatchJudge(entryIds, profile = null) {
   let successCount = 0;
   let failCount = 0;
 
+  _batchJudgeCancelled = false;
+
   for (let i = 0; i < total; i++) {
+    // 检查是否取消
+    if (_batchJudgeCancelled) {
+      toast(`已取消批量评价，完成 ${successCount} 个`);
+      break;
+    }
+
     const entryId = entryIds[i];
     const entry = S.entries.find(e => e.id === entryId);
     if (!entry || !entry.answer) {
@@ -198,7 +215,11 @@ export async function startBatchJudge(entryIds, profile = null) {
     }
 
     const progress = Math.round(((i) / total) * 100);
-    showJudgeProgress(`评价中 ${i + 1}/${total} · ${entry.blindId}...`, progress);
+    showJudgeProgress(
+      `评价中 ${i + 1}/${total} · ${entry.blindId}...`,
+      progress,
+      `正在评价: ${entry.qName} (${entry.model})`
+    );
 
     try {
       const judgePrompt = buildJudgePrompt(entry.prompt, entry.answer, entry.qName);
@@ -237,8 +258,14 @@ export async function startBatchJudge(entryIds, profile = null) {
         entry.llmScore = Math.min(parsed.total_score, maxScore);
         entry.llmDetail = parsed;
         entry.note = `AI评价 (${profile.model})`;
-        if (!entry.autoScore) entry.score = entry.llmScore;
-        else entry.note = '双轨评分';
+
+        // 双轨评分逻辑：取平均分作为主分数
+        if (entry.autoScore && entry.score !== null && entry.score !== undefined) {
+          entry.score = Math.round((entry.score + entry.llmScore) / 2);
+          entry.note = '双轨评分';
+        } else {
+          entry.score = entry.llmScore;
+        }
         successCount++;
       }
 
@@ -249,16 +276,22 @@ export async function startBatchJudge(entryIds, profile = null) {
     }
 
     // Brief pause between requests to avoid rate limits
-    if (i < total - 1) await new Promise(r => setTimeout(r, 300));
+    if (i < total - 1) {
+      await new Promise(r => setTimeout(r, 300));
+    }
   }
 
-  showJudgeProgress(`批量评价完成 ${successCount}/${total}`, 100);
-  await new Promise(r => setTimeout(r, 800));
+  if (!_batchJudgeCancelled) {
+    showJudgeProgress(`批量评价完成 ${successCount}/${total}`, 100);
+    await new Promise(r => setTimeout(r, 800));
+  }
   hideJudgeProgress();
 
   renderSidebar();
   render();
-  toast(`批量评价完成: ${successCount}成功, ${failCount}失败`);
+  if (!_batchJudgeCancelled) {
+    toast(`批量评价完成: ${successCount}成功, ${failCount}失败`);
+  }
 }
 
 // ==================== Judge 配置弹窗 ====================
@@ -364,4 +397,11 @@ window.doStartJudgeFromModal = async function() {
 window.closeJudgeConfigModal = function() {
   const modal = document.getElementById('judgeConfigModal');
   if (modal) modal.classList.remove('show');
+};
+
+// 取消批量评价
+window._cancelBatchJudge = function() {
+  _batchJudgeCancelled = true;
+  hideJudgeProgress();
+  toast('已取消批量评价');
 };

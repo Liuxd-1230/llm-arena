@@ -11,6 +11,40 @@ import { renderSidebar } from '../components/sidebar.js';
 import { render } from '../router.js';
 import { autoScore, hasAutoScore } from '../../data/autoscore.js';
 
+// 表单状态缓存
+const _formStateCache = {};
+
+/**
+ * 保存当前表单状态
+ */
+function _saveFormState() {
+  const modelInput = document.getElementById('cModel');
+  const answerInput = document.getElementById('cAnswer');
+  if (modelInput || answerInput) {
+    _formStateCache[S.dim + ':' + (S.q?.name || '')] = {
+      model: modelInput?.value || '',
+      answer: answerInput?.value || '',
+    };
+  }
+}
+
+// 暴露到 window，供 router.js 调用
+window._saveFormState = _saveFormState;
+
+/**
+ * 恢复表单状态
+ */
+function _restoreFormState() {
+  const key = S.dim + ':' + (S.q?.name || '');
+  const state = _formStateCache[key];
+  if (state) {
+    const modelInput = document.getElementById('cModel');
+    const answerInput = document.getElementById('cAnswer');
+    if (modelInput && state.model) modelInput.value = state.model;
+    if (answerInput && state.answer) answerInput.value = state.answer;
+  }
+}
+
 export function setSubmitMode(mode) {
   S.submitMode = mode;
   document.getElementById('modeAuto')?.classList.toggle('active', mode === 'auto');
@@ -85,6 +119,11 @@ export function renderDim(el) {
       <div class="q-card-name">${q.name}</div><div class="q-card-desc">${q.prompt.slice(0, 60)}...</div></div>`;
     }).join('')}</div>
     ${S.q ? renderCollectPanel() : ''}`;
+
+  // 恢复表单状态
+  setTimeout(() => {
+    _restoreFormState();
+  }, 50);
 }
 
 export function renderCollectPanel() {

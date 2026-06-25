@@ -10,14 +10,31 @@ import { render } from '../router.js';
 import { escapeAttr } from '../utils.js';
 import { toast } from '../components/toast.js';
 
+/**
+ * 标准化模型名称：统一大小写、去除多余空格
+ */
+function normalizeModelName(name) {
+  if (!name) return '';
+  return name.trim()
+    .toLowerCase()
+    .replace(/\s+/g, ' ')
+    .replace(/[^a-z0-9一-龥\s\-_.]/g, '')  // 保留字母数字中文和基本符号
+    .trim();
+}
+
 export function getModelStats() {
   const models = {};
   S.entries.forEach(e => {
     if (e.score === null || e.score === undefined) return;
-    if (!models[e.model]) models[e.model] = {
-      name: e.model, scores: {}, dimScores: {}, count: 0, totalScore: 0
+    const normalizedName = normalizeModelName(e.model);
+    if (!normalizedName) return;
+
+    // 使用标准化名称作为 key，但保留原始名称用于显示
+    if (!models[normalizedName]) models[normalizedName] = {
+      name: e.model,  // 保留第一个遇到的原始名称
+      scores: {}, dimScores: {}, count: 0, totalScore: 0
     };
-    const m = models[e.model];
+    const m = models[normalizedName];
     m.count++;
     m.totalScore += e.score;
     if (!m.dimScores[e.dimId]) m.dimScores[e.dimId] = [];

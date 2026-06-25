@@ -112,12 +112,23 @@ async function saveToServer() {
  */
 export { _getAuthHeaders as getAuthHeaders };
 
+// 保存队列，防止竞态条件
+let _savePromise = null;
+
 /**
  * 保存状态（同时写服务器 + localStorage）
+ * 使用队列机制防止竞态条件
  */
-export function save() {
+export async function save() {
   saveToCache();
-  saveToServer(); // 异步，不阻塞
+  // 如果有正在进行的保存，等待它完成
+  if (_savePromise) {
+    await _savePromise;
+  }
+  // 开始新的保存，并保存 promise 引用
+  _savePromise = saveToServer().finally(() => {
+    _savePromise = null;
+  });
 }
 
 /**
@@ -148,8 +159,10 @@ export function exportToFile() {
 
 /**
  * 从 JSON 文件导入数据
+ * @param {File} file - 文件对象
+ * @param {boolean} merge - 是否合并模式（true: 追加新数据，false: 覆盖）
  */
-export function importFromFile(file) {
+export function importFromFile(file, merge = false) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => {
@@ -163,11 +176,27 @@ export function importFromFile(file) {
           reject(new Error('无效的备份文件：entries 不是数组'));
           return;
         }
-        S.entries = data.entries;
-        S.nextId = data.nextId || S.entries.length + 1;
-        S.revealed = data.revealed || false;
+
+        if (merge) {
+          // 合并模式：追加新数据，跳过重复 ID
+          const existingIds = new Set(S.entries.map(e => e.id));
+          const newEntries = data.entries.filter(e => !existingIds.has(e.id));
+          S.entries.push(...newEntries);
+          // 更新 nextId 为最大值
+          const maxId = Math.max(
+            S.nextId,
+            ...S.entries.map(e => e.id || 0)
+          );
+          S.nextId = maxId + 1;
+        } else {
+          // 覆盖模式：完全替换
+          S.entries = data.entries;
+          S.nextId = data.nextId || S.entries.length + 1;
+          S.revealed = data.revealed || false;
+        }
+
         save();
-        resolve(S.entries.length);
+        resolve(merge ? data.entries.length : S.entries.length);
       } catch (e) {
         reject(e);
       }

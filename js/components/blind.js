@@ -96,6 +96,12 @@ export function skipBlind() {
 }
 
 export function exitBlind() {
+  // 保存已评分的进度
+  const scoredCount = S.blindIdx;
+  if (scoredCount > 0) {
+    save();
+    toast(`已保存 ${scoredCount} 条评分`);
+  }
   document.getElementById('blindOverlay').classList.remove('show');
   renderSidebar();
   render();
