@@ -146,7 +146,7 @@ export async function startApiRun(dimId, diff, qName) {
         api_key: profile.api_key,
         model: profile.model,
         messages: [{ role: 'user', content: fullPrompt }],
-        temperature: profile.temperature || 0.7,
+        temperature: profile.temperature || 0.3,
         stream: true
       })
     });
