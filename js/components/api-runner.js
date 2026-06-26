@@ -7,7 +7,7 @@ import { S, save, getAuthHeaders } from '../state.js';
 import { render } from '../router.js';
 import { renderSidebar } from '../components/sidebar.js';
 import { toast } from '../components/toast.js';
-import { getDim, getLongDocForQuestion, stripCodeFence, extractThinking } from '../utils.js';
+import { getDim, getLongDocForQuestion, stripCodeFence, extractThinking, escHtml } from '../utils.js';
 import { getAnswerProfile } from '../views/api-config.js';
 import { QS } from '../data/questions.js';
 import { autoScore, hasAutoScore } from '../../data/autoscore.js';
@@ -55,7 +55,7 @@ function createOverlayHTML(q, dim) {
         <!-- Question Info -->
         <div style="padding:12px 20px;background:var(--s2);border-bottom:1px solid var(--bdr);">
           <div style="font-size:11px;color:var(--t4);margin-bottom:4px;">题目</div>
-          <div style="font-size:13px;color:var(--t2);font-weight:500;">${dim.emoji || ''} ${q.name} (${q.diff})</div>
+          <div style="font-size:13px;color:var(--t2);font-weight:500;">${escHtml(dim.emoji || '')} ${escHtml(q.name)} (${escHtml(q.diff)})</div>
         </div>
 
         <!-- Auto-score Option -->

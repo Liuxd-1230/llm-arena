@@ -118,13 +118,13 @@ export function renderDim(el) {
   const qs = QS.filter(q => q.dim === dim.id);
   const filtered = S.diff === 'all' ? qs : qs.filter(q => q.diff === S.diff);
   el.innerHTML = `
-    <div class="sec-head"><div><div class="sec-title"><i class="${dim.icon}" style="color:${dim.color};margin-right:8px;"></i>${dim.name} ${dim.autoScore ? '<span style="font-size:12px;color:var(--gn);font-weight:400;">⚡自动评分</span>' : '<span style="font-size:12px;color:var(--am);font-weight:400;">👁️盲测</span>'}</div><div class="sec-desc">${dim.desc}</div></div></div>
-    <div class="diff-row"><button class="diff-pill ${S.diff === 'all' ? 'active' : ''}" onclick="S.diff='all';render()">全部</button>${DIFFS.map(d => `<button class="diff-pill ${S.diff === d.id ? 'active' : ''}" onclick="S.diff='${d.id}';render()">${d.emoji} ${d.name}</button>`).join('')}</div>
+    <div class="sec-head"><div><div class="sec-title"><i class="${escHtml(dim.icon)}" style="color:${escHtml(dim.color)};margin-right:8px;"></i>${escHtml(dim.name)} ${dim.autoScore ? '<span style="font-size:12px;color:var(--gn);font-weight:400;">⚡自动评分</span>' : '<span style="font-size:12px;color:var(--am);font-weight:400;">👁️盲测</span>'}</div><div class="sec-desc">${escHtml(dim.desc)}</div></div></div>
+    <div class="diff-row"><button class="diff-pill ${S.diff === 'all' ? 'active' : ''}" onclick="S.diff='all';render()">全部</button>${DIFFS.map(d => `<button class="diff-pill ${S.diff === d.id ? 'active' : ''}" onclick="S.diff='${escapeAttr(d.id)}';render()">${escHtml(d.emoji)} ${escHtml(d.name)}</button>`).join('')}</div>
     <div class="q-grid">${filtered.map(q => {
       const dm = getDiff(q.diff);
       return `<div class="q-card ${S.q?.name === q.name ? 'selected' : ''}" onclick="selectQ('${escapeAttr(q.dim)}','${escapeAttr(q.diff)}','${escapeAttr(q.name)}')">
-      <div class="q-card-head"><span class="q-card-diff" style="background:${dim.color}15;color:${dim.color}">${dm.emoji} ${dm.name}</span><span style="margin-left:auto;font-size:11px;color:var(--t4);">上限${dm.max}分</span></div>
-      <div class="q-card-name">${q.name}</div><div class="q-card-desc">${q.prompt.slice(0, 60)}...</div></div>`;
+      <div class="q-card-head"><span class="q-card-diff" style="background:${escHtml(dim.color)}15;color:${escHtml(dim.color)}">${escHtml(dm.emoji)} ${escHtml(dm.name)}</span><span style="margin-left:auto;font-size:11px;color:var(--t4);">上限${dm.max}分</span></div>
+      <div class="q-card-name">${escHtml(q.name)}</div><div class="q-card-desc">${escHtml(q.prompt.slice(0, 60))}...</div></div>`;
     }).join('')}</div>
     ${S.q ? renderCollectPanel() : ''}`;
 

@@ -417,7 +417,7 @@ class Handler(SimpleHTTPRequestHandler):
     def _handle_normal_response(self, req):
         """非流式请求：转发并返回完整响应"""
         try:
-            resp = urllib.request.urlopen(req, timeout=None, context=SSL_CTX)
+            resp = urllib.request.urlopen(req, timeout=120, context=SSL_CTX)
             result = resp.read().decode("utf-8")
             status = resp.getcode()
             # 回传上游的状态码和内容类型
